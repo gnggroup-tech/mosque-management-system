@@ -17,4 +17,5 @@ class MosqueCouncil extends Model
     public function mosque(): BelongsTo { return $this->belongsTo(Mosque::class); }
     public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
     public function members(): HasMany { return $this->hasMany(CouncilMember::class); }
+    public function meetings(): HasMany { return $this->hasMany(CouncilMeeting::class); }
 }
