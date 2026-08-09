@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DonationController;
 use App\Http\Controllers\Admin\FaithfulController;
 use App\Http\Controllers\Admin\MosqueController;
 use App\Http\Controllers\Admin\MosqueCouncilController;
+use App\Http\Controllers\Admin\ZakatController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +47,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/donations/{donation}/validate', [DonationController::class, 'validateDonation'])->middleware('permission:contributions.manage')->name('donations.validate');
         Route::post('/donations/{donation}/reject', [DonationController::class, 'reject'])->middleware('permission:contributions.manage')->name('donations.reject');
         Route::delete('/donations/{donation}', [DonationController::class, 'destroy'])->middleware('permission:contributions.manage')->name('donations.destroy');
+        Route::get('/zakat/collections', [ZakatController::class, 'index'])->middleware('permission:zakat.view')->name('zakat.collections.index');
+        Route::post('/zakat/collections', [ZakatController::class, 'storeCollection'])->middleware('permission:zakat.manage')->name('zakat.collections.store');
+        Route::post('/zakat/collections/{collection}/validate', [ZakatController::class, 'validateCollection'])->middleware('permission:zakat.manage')->name('zakat.collections.validate');
+        Route::post('/zakat/beneficiaries', [ZakatController::class, 'storeBeneficiary'])->middleware('permission:zakat.manage')->name('zakat.beneficiaries.store');
+        Route::post('/zakat/distributions', [ZakatController::class, 'storeDistribution'])->middleware('permission:zakat.manage')->name('zakat.distributions.store');
+        Route::post('/zakat/distributions/{distribution}/validate', [ZakatController::class, 'validateDistribution'])->middleware('permission:zakat.manage')->name('zakat.distributions.validate');
     });
 });
 require __DIR__.'/auth.php';
