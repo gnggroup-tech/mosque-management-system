@@ -7,9 +7,7 @@ use App\Services\AuditLogger;
 
 class UserObserver
 {
-    public function __construct(private readonly AuditLogger $auditLogger)
-    {
-    }
+    public function __construct(private readonly AuditLogger $auditLogger) {}
 
     public function created(User $user): void
     {

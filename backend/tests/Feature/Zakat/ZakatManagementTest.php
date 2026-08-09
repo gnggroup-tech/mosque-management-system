@@ -7,7 +7,6 @@ use App\Models\Mosque;
 use App\Models\User;
 use App\Models\ZakatBeneficiary;
 use App\Models\ZakatCollection;
-use App\Models\ZakatDistribution;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -15,7 +14,12 @@ use Tests\TestCase;
 class ZakatManagementTest extends TestCase
 {
     use RefreshDatabase;
-    protected function setUp(): void { parent::setUp(); $this->seed(RolesAndPermissionsSeeder::class); }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RolesAndPermissionsSeeder::class);
+    }
 
     public function test_admin_can_record_and_validate_a_calculated_collection(): void
     {
@@ -28,35 +32,40 @@ class ZakatManagementTest extends TestCase
     public function test_incorrect_calculated_amount_is_rejected(): void
     {
         [$admin, $mosque] = $this->adminAndMosque();
-        $payload = $this->collectionPayload($mosque); $payload['amount'] = 30000;
+        $payload = $this->collectionPayload($mosque);
+        $payload['amount'] = 30000;
         $this->actingAs($admin)->postJson(route('admin.zakat.collections.store'), $payload)->assertUnprocessable();
     }
 
     public function test_anonymous_collection_does_not_keep_identity(): void
     {
         [$admin, $mosque] = $this->adminAndMosque();
-        $payload = $this->collectionPayload($mosque) + ['is_anonymous' => true]; $payload['payer_name'] = 'Privé';
+        $payload = $this->collectionPayload($mosque) + ['is_anonymous' => true];
+        $payload['payer_name'] = 'Privé';
         $created = $this->actingAs($admin)->postJson(route('admin.zakat.collections.store'), $payload)->assertCreated();
         $this->assertDatabaseHas('zakat_collections', ['id' => $created->json('id'), 'is_anonymous' => true, 'payer_name' => null, 'faithful_id' => null]);
     }
 
     public function test_admin_cannot_manage_another_mosques_zakat(): void
     {
-        [$admin] = $this->adminAndMosque('main'); [, $other] = $this->adminAndMosque('other');
+        [$admin] = $this->adminAndMosque('main');
+        [, $other] = $this->adminAndMosque('other');
         $this->actingAs($admin)->postJson(route('admin.zakat.collections.store'), $this->collectionPayload($other))->assertForbidden();
         $this->actingAs($admin)->postJson(route('admin.zakat.beneficiaries.store'), $this->beneficiaryPayload($other))->assertForbidden();
     }
 
     public function test_beneficiary_must_be_active_and_belong_to_the_mosque(): void
     {
-        [$admin, $mosque] = $this->adminAndMosque(); [, $other] = $this->adminAndMosque('other');
+        [$admin, $mosque] = $this->adminAndMosque();
+        [, $other] = $this->adminAndMosque('other');
         $beneficiary = $this->beneficiary($other);
         $this->actingAs($admin)->postJson(route('admin.zakat.distributions.store'), $this->distributionPayload($mosque, $beneficiary))->assertUnprocessable();
     }
 
     public function test_distribution_cannot_exceed_validated_category_balance(): void
     {
-        [$admin, $mosque] = $this->adminAndMosque(); $beneficiary = $this->beneficiary($mosque);
+        [$admin, $mosque] = $this->adminAndMosque();
+        $beneficiary = $this->beneficiary($mosque);
         $distribution = $this->actingAs($admin)->postJson(route('admin.zakat.distributions.store'), $this->distributionPayload($mosque, $beneficiary))->assertCreated();
         $this->actingAs($admin)->postJson(route('admin.zakat.distributions.validate', $distribution->json('id')))->assertUnprocessable();
     }
@@ -86,26 +95,33 @@ class ZakatManagementTest extends TestCase
 
     private function adminAndMosque(string $suffix = 'main'): array
     {
-        $admin = User::factory()->create(['email' => $suffix.'-zakat@example.com']); $admin->assignRole('admin');
+        $admin = User::factory()->create(['email' => $suffix.'-zakat@example.com']);
+        $admin->assignRole('admin');
         $mosque = Mosque::query()->create(['code' => 'ZAK-'.strtoupper($suffix), 'name' => 'Mosquée '.$suffix, 'address' => 'Conakry', 'region' => 'Conakry', 'prefecture' => 'Conakry', 'commune' => 'Ratoma', 'status' => 'active', 'infrastructures' => [], 'admin_id' => $admin->id]);
+
         return [$admin, $mosque];
     }
+
     private function collectionPayload(Mosque $mosque): array
     {
         return ['mosque_id' => $mosque->id, 'category' => 'maal', 'assessable_amount' => 1000000, 'rate' => 2.5, 'amount' => 25000, 'currency' => 'GNF', 'payment_method' => 'cash', 'collected_at' => now()->subMinute()->toDateTimeString(), 'payer_name' => 'Payeur test'];
     }
+
     private function collectionRecord(Mosque $mosque, User $admin): array
     {
         return ['mosque_id' => $mosque->id, 'receipt_number' => 'ZAK-'.strtoupper(uniqid()), 'category' => 'maal', 'amount' => 100000, 'currency' => 'GNF', 'payment_method' => 'cash', 'collected_at' => now(), 'payer_name' => 'Payeur', 'created_by' => $admin->id];
     }
+
     private function beneficiaryPayload(Mosque $mosque): array
     {
         return ['mosque_id' => $mosque->id, 'name' => 'Bénéficiaire test', 'category' => 'poor', 'eligibility_reason' => 'Situation vérifiée par le conseil'];
     }
+
     private function beneficiary(Mosque $mosque): ZakatBeneficiary
     {
         return ZakatBeneficiary::query()->create($this->beneficiaryPayload($mosque) + ['beneficiary_number' => 'BEN-'.strtoupper(uniqid()), 'status' => 'active', 'verified_at' => now(), 'verified_by' => $mosque->admin_id]);
     }
+
     private function distributionPayload(Mosque $mosque, ZakatBeneficiary $beneficiary): array
     {
         return ['mosque_id' => $mosque->id, 'zakat_beneficiary_id' => $beneficiary->id, 'category' => 'maal', 'amount' => 50000, 'currency' => 'GNF', 'payment_method' => 'cash', 'distributed_at' => now()->toDateTimeString(), 'purpose' => 'Aide alimentaire'];

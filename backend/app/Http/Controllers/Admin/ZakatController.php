@@ -42,7 +42,10 @@ class ZakatController extends Controller
             abort_if(abs($calculated - (float) $data['amount']) > 0.01, 422, 'Le montant ne correspond pas au calcul de la Zakat.');
         }
         $data += ['currency' => 'GNF', 'is_anonymous' => false];
-        if ($data['is_anonymous']) { $data['faithful_id'] = null; $data['payer_name'] = null; }
+        if ($data['is_anonymous']) {
+            $data['faithful_id'] = null;
+            $data['payer_name'] = null;
+        }
         $data['receipt_number'] = $this->uniqueNumber('ZAK', ZakatCollection::class, 'receipt_number');
         $data['status'] = 'pending';
         $data['created_by'] = $request->user()->getKey();
@@ -58,6 +61,7 @@ class ZakatController extends Controller
             abort_if($locked->status !== 'pending', 422, 'Cette collecte a déjà été traitée.');
             $locked->update(['status' => 'validated', 'validated_by' => $request->user()->id, 'validated_at' => now()]);
         });
+
         return response()->json($collection->fresh());
     }
 
@@ -107,6 +111,7 @@ class ZakatController extends Controller
             abort_if((float) $locked->amount > ((float) $collected - (float) $distributed), 422, 'Solde de Zakat insuffisant pour cette distribution.');
             $locked->update(['status' => 'validated', 'validated_by' => $request->user()->id, 'validated_at' => now()]);
         });
+
         return response()->json($distribution->fresh());
     }
 
@@ -114,18 +119,26 @@ class ZakatController extends Controller
     {
         return ZakatCollection::query()->when($user->hasRole('admin'), fn (Builder $q) => $q->whereHas('mosque', fn (Builder $m) => $m->where('admin_id', $user->id)));
     }
+
     private function ensureMosqueManageable(User $user, int $mosqueId): void
     {
         $mosque = Mosque::query()->findOrFail($mosqueId);
         abort_unless($user->hasRole('superadmin') || $mosque->admin_id === $user->id, 403);
     }
+
     private function ensureFaithfulBelongsToMosque(?int $faithfulId, int $mosqueId): void
     {
-        if ($faithfulId !== null) { abort_unless(Faithful::query()->whereKey($faithfulId)->where('mosque_id', $mosqueId)->exists(), 422); }
+        if ($faithfulId !== null) {
+            abort_unless(Faithful::query()->whereKey($faithfulId)->where('mosque_id', $mosqueId)->exists(), 422);
+        }
     }
+
     private function uniqueNumber(string $prefix, string $model, string $column): string
     {
-        do { $number = $prefix.'-'.now()->format('Ymd').'-'.Str::upper(Str::random(8)); } while ($model::query()->where($column, $number)->exists());
+        do {
+            $number = $prefix.'-'.now()->format('Ymd').'-'.Str::upper(Str::random(8));
+        } while ($model::query()->where($column, $number)->exists());
+
         return $number;
     }
 }

@@ -7,7 +7,11 @@ use Illuminate\Validation\Rule;
 
 class StoreCouncilDecisionRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->can('council-meetings.manage') ?? false; }
+    public function authorize(): bool
+    {
+        return $this->user()?->can('council-meetings.manage') ?? false;
+    }
+
     public function rules(): array
     {
         return [

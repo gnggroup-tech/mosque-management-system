@@ -19,7 +19,18 @@ class Activity extends Model
         return ['starts_at' => 'datetime', 'ends_at' => 'datetime', 'published_at' => 'datetime', 'registration_required' => 'boolean'];
     }
 
-    public function mosque(): BelongsTo { return $this->belongsTo(Mosque::class); }
-    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
-    public function registrations(): HasMany { return $this->hasMany(ActivityRegistration::class); }
+    public function mosque(): BelongsTo
+    {
+        return $this->belongsTo(Mosque::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(ActivityRegistration::class);
+    }
 }

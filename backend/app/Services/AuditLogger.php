@@ -8,9 +8,7 @@ use Illuminate\Http\Request;
 
 class AuditLogger
 {
-    public function __construct(private readonly Request $request)
-    {
-    }
+    public function __construct(private readonly Request $request) {}
 
     public function log(string $event, ?Model $auditable = null, array $metadata = [], ?int $actorId = null): AuditLog
     {

@@ -7,7 +7,11 @@ use Illuminate\Validation\Rule;
 
 class StoreAnnouncementRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->can('announcements.manage') === true; }
+    public function authorize(): bool
+    {
+        return $this->user()?->can('announcements.manage') === true;
+    }
+
     public function rules(): array
     {
         return [

@@ -7,7 +7,10 @@ use Illuminate\Validation\Rule;
 
 class StoreCouncilMemberRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->can('council-members.create') === true; }
+    public function authorize(): bool
+    {
+        return $this->user()?->can('council-members.create') === true;
+    }
 
     public function rules(): array
     {

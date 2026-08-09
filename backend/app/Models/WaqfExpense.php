@@ -12,8 +12,23 @@ class WaqfExpense extends Model
 {
     use SoftDeletes;
 
-    protected function casts(): array { return ['amount' => 'decimal:2', 'spent_at' => 'datetime', 'validated_at' => 'datetime']; }
-    public function asset(): BelongsTo { return $this->belongsTo(WaqfAsset::class, 'waqf_asset_id'); }
-    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
-    public function validator(): BelongsTo { return $this->belongsTo(User::class, 'validated_by'); }
+    protected function casts(): array
+    {
+        return ['amount' => 'decimal:2', 'spent_at' => 'datetime', 'validated_at' => 'datetime'];
+    }
+
+    public function asset(): BelongsTo
+    {
+        return $this->belongsTo(WaqfAsset::class, 'waqf_asset_id');
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function validator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'validated_by');
+    }
 }

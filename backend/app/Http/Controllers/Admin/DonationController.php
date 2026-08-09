@@ -61,6 +61,7 @@ class DonationController extends Controller
     public function show(Request $request, Donation $donation): JsonResponse
     {
         abort_unless($this->visibleTo($request->user())->whereKey($donation)->exists(), 403);
+
         return response()->json($donation->load(['mosque:id,code,name', 'faithful:id,registration_number,first_name,last_name']));
     }
 

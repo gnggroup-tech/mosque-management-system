@@ -90,6 +90,7 @@ class FinancialManagementTest extends TestCase
         $admin = User::factory()->create(['email' => $suffix.'-finance@example.com']);
         $admin->assignRole('admin');
         $mosque = Mosque::query()->create(['code' => 'FIN-'.strtoupper($suffix), 'name' => 'Mosquée '.$suffix, 'address' => 'Conakry', 'region' => 'Conakry', 'prefecture' => 'Conakry', 'commune' => 'Ratoma', 'status' => 'active', 'infrastructures' => [], 'admin_id' => $admin->id]);
+
         return [$admin, $mosque];
     }
 

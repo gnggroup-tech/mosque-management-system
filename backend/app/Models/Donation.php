@@ -28,8 +28,23 @@ class Donation extends Model
         ];
     }
 
-    public function mosque(): BelongsTo { return $this->belongsTo(Mosque::class); }
-    public function faithful(): BelongsTo { return $this->belongsTo(Faithful::class); }
-    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
-    public function validator(): BelongsTo { return $this->belongsTo(User::class, 'validated_by'); }
+    public function mosque(): BelongsTo
+    {
+        return $this->belongsTo(Mosque::class);
+    }
+
+    public function faithful(): BelongsTo
+    {
+        return $this->belongsTo(Faithful::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function validator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'validated_by');
+    }
 }

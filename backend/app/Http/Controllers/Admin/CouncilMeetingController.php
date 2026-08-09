@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Council\StoreCouncilDecisionRequest;
 use App\Http\Requests\Council\StoreCouncilMeetingRequest;
-use App\Models\CouncilDecision;
 use App\Models\CouncilMeeting;
 use App\Models\CouncilMember;
 use App\Models\MosqueCouncil;
@@ -30,7 +29,8 @@ class CouncilMeetingController extends Controller
     public function store(StoreCouncilMeetingRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $participantIds = $data['participant_ids']; unset($data['participant_ids']);
+        $participantIds = $data['participant_ids'];
+        unset($data['participant_ids']);
         $council = MosqueCouncil::query()->with('mosque')->findOrFail($data['mosque_council_id']);
         $this->ensureManageable($request->user(), $council);
         abort_unless($council->status === 'active', 422, 'Le conseil doit être actif.');
@@ -41,14 +41,17 @@ class CouncilMeetingController extends Controller
         $meeting = DB::transaction(function () use ($data, $participantIds, $request): CouncilMeeting {
             $meeting = CouncilMeeting::query()->create($data + ['status' => 'draft', 'created_by' => $request->user()->id]);
             $meeting->participants()->createMany(array_map(fn (int $id) => ['council_member_id' => $id], $participantIds));
+
             return $meeting;
         });
+
         return response()->json($meeting->load('participants.member.user:id,name,email'), 201);
     }
 
     public function show(Request $request, CouncilMeeting $meeting): JsonResponse
     {
         abort_unless($this->visibleTo($request->user())->whereKey($meeting)->exists(), 403);
+
         return response()->json($meeting->load(['council.mosque:id,code,name', 'participants.member.user:id,name,email', 'decisions.responsible:id,name,email']));
     }
 
@@ -57,6 +60,7 @@ class CouncilMeetingController extends Controller
         $this->ensureMeetingManageable($request->user(), $meeting);
         abort_unless($meeting->status === 'draft', 422, 'La convocation a déjà été envoyée.');
         $meeting->update(['status' => 'convened', 'notice_sent_at' => now()]);
+
         return response()->json($meeting->fresh());
     }
 
@@ -68,6 +72,7 @@ class CouncilMeetingController extends Controller
             $updated = $meeting->participants()->whereKey($participant['id'])->update(['attendance_status' => $participant['status'], 'responded_at' => now()]);
             abort_if($updated === 0, 422, 'Participant invalide.');
         }
+
         return response()->json($meeting->fresh()->load('participants'));
     }
 
@@ -78,6 +83,7 @@ class CouncilMeetingController extends Controller
         abort_unless($meeting->status === 'convened', 422, 'La réunion doit avoir été convoquée.');
         abort_if($meeting->participants()->where('attendance_status', 'present')->count() < $meeting->quorum_required, 422, 'Le quorum n’est pas atteint.');
         $meeting->update(['status' => 'completed', 'minutes' => $data['minutes'], 'held_at' => now()]);
+
         return response()->json($meeting->fresh());
     }
 
@@ -87,8 +93,9 @@ class CouncilMeetingController extends Controller
         abort_unless($meeting->status === 'completed', 422, 'Le procès-verbal doit être clôturé avant les décisions.');
         $data = $request->validated();
         $present = $meeting->participants()->where('attendance_status', 'present')->count();
-        abort_if($data['votes_for'] + $data['votes_against'] + $data['abstentions'] > $present, 422, 'Le nombre de votes dépasse les présences.');
+        abort_if($present < $data['votes_for'] + $data['votes_against'] + $data['abstentions'], 422, 'Le nombre de votes dépasse les présences.');
         $data['reference'] = 'DEC-'.$meeting->id.'-'.Str::upper(Str::random(8));
+
         return response()->json($meeting->decisions()->create($data), 201);
     }
 
@@ -98,6 +105,13 @@ class CouncilMeetingController extends Controller
             ->when($user->hasRole('user'), fn (Builder $q) => $q->whereHas('participants.member', fn (Builder $m) => $m->where('user_id', $user->id)));
     }
 
-    private function ensureMeetingManageable(User $user, CouncilMeeting $meeting): void { $this->ensureManageable($user, $meeting->council()->with('mosque')->firstOrFail()); }
-    private function ensureManageable(User $user, MosqueCouncil $council): void { abort_unless($user->hasRole('superadmin') || $council->mosque->admin_id === $user->id, 403); }
+    private function ensureMeetingManageable(User $user, CouncilMeeting $meeting): void
+    {
+        $this->ensureManageable($user, $meeting->council()->with('mosque')->firstOrFail());
+    }
+
+    private function ensureManageable(User $user, MosqueCouncil $council): void
+    {
+        abort_unless($user->hasRole('superadmin') || $council->mosque->admin_id === $user->id, 403);
+    }
 }

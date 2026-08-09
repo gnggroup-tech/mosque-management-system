@@ -8,8 +8,11 @@ class UpdateAnnouncementRequest extends StoreAnnouncementRequest
     {
         $rules = parent::rules();
         foreach ($rules as &$rule) {
-            if (($key = array_search('required', $rule, true)) !== false) { $rule[$key] = 'sometimes'; }
+            if (($key = array_search('required', $rule, true)) !== false) {
+                $rule[$key] = 'sometimes';
+            }
         }
+
         return $rules;
     }
 }

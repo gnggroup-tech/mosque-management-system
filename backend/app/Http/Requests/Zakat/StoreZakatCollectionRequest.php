@@ -7,7 +7,11 @@ use Illuminate\Validation\Rule;
 
 class StoreZakatCollectionRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->can('zakat.manage') === true; }
+    public function authorize(): bool
+    {
+        return $this->user()?->can('zakat.manage') === true;
+    }
+
     public function rules(): array
     {
         return [

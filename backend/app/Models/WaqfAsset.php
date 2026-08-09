@@ -13,9 +13,28 @@ class WaqfAsset extends Model
 {
     use SoftDeletes;
 
-    protected function casts(): array { return ['estimated_value' => 'decimal:2', 'dedicated_at' => 'date']; }
-    public function mosque(): BelongsTo { return $this->belongsTo(Mosque::class); }
-    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
-    public function revenues(): HasMany { return $this->hasMany(WaqfRevenue::class); }
-    public function expenses(): HasMany { return $this->hasMany(WaqfExpense::class); }
+    protected function casts(): array
+    {
+        return ['estimated_value' => 'decimal:2', 'dedicated_at' => 'date'];
+    }
+
+    public function mosque(): BelongsTo
+    {
+        return $this->belongsTo(Mosque::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function revenues(): HasMany
+    {
+        return $this->hasMany(WaqfRevenue::class);
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(WaqfExpense::class);
+    }
 }

@@ -11,9 +11,29 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class ZakatDistribution extends Model
 {
     use SoftDeletes;
-    protected function casts(): array { return ['amount' => 'decimal:2', 'distributed_at' => 'datetime', 'validated_at' => 'datetime']; }
-    public function mosque(): BelongsTo { return $this->belongsTo(Mosque::class); }
-    public function beneficiary(): BelongsTo { return $this->belongsTo(ZakatBeneficiary::class, 'zakat_beneficiary_id'); }
-    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
-    public function validator(): BelongsTo { return $this->belongsTo(User::class, 'validated_by'); }
+
+    protected function casts(): array
+    {
+        return ['amount' => 'decimal:2', 'distributed_at' => 'datetime', 'validated_at' => 'datetime'];
+    }
+
+    public function mosque(): BelongsTo
+    {
+        return $this->belongsTo(Mosque::class);
+    }
+
+    public function beneficiary(): BelongsTo
+    {
+        return $this->belongsTo(ZakatBeneficiary::class, 'zakat_beneficiary_id');
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function validator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'validated_by');
+    }
 }

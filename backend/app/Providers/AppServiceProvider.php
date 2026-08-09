@@ -4,9 +4,9 @@ namespace App\Providers;
 
 use App\Models\Activity;
 use App\Models\Announcement;
-use App\Models\CouncilMember;
 use App\Models\CouncilDecision;
 use App\Models\CouncilMeeting;
+use App\Models\CouncilMember;
 use App\Models\Donation;
 use App\Models\Expense;
 use App\Models\Faithful;
@@ -14,29 +14,30 @@ use App\Models\Mosque;
 use App\Models\MosqueCouncil;
 use App\Models\Subsidy;
 use App\Models\User;
-use App\Models\ZakatBeneficiary;
-use App\Models\ZakatCollection;
-use App\Models\ZakatDistribution;
 use App\Models\WaqfAsset;
 use App\Models\WaqfExpense;
 use App\Models\WaqfRevenue;
+use App\Models\ZakatBeneficiary;
+use App\Models\ZakatCollection;
+use App\Models\ZakatDistribution;
 use App\Observers\ActivityObserver;
 use App\Observers\AnnouncementObserver;
-use App\Observers\CouncilMemberObserver;
 use App\Observers\CouncilMeetingObserver;
+use App\Observers\CouncilMemberObserver;
 use App\Observers\DonationObserver;
-use App\Observers\FinanceObserver;
 use App\Observers\FaithfulObserver;
+use App\Observers\FinanceObserver;
 use App\Observers\MosqueCouncilObserver;
 use App\Observers\MosqueObserver;
 use App\Observers\UserObserver;
-use App\Observers\ZakatObserver;
 use App\Observers\WaqfObserver;
+use App\Observers\ZakatObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void {}
+
     public function boot(): void
     {
         Activity::observe(ActivityObserver::class);

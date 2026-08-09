@@ -12,7 +12,18 @@ class ActivityRegistration extends Model
 {
     use HasFactory;
 
-    protected function casts(): array { return ['registered_at' => 'datetime']; }
-    public function activity(): BelongsTo { return $this->belongsTo(Activity::class); }
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
+    protected function casts(): array
+    {
+        return ['registered_at' => 'datetime'];
+    }
+
+    public function activity(): BelongsTo
+    {
+        return $this->belongsTo(Activity::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }
