@@ -21,5 +21,7 @@ class User extends Authenticatable
     public function createdCouncils(): HasMany { return $this->hasMany(MosqueCouncil::class, 'created_by'); }
     public function councilMemberships(): HasMany { return $this->hasMany(CouncilMember::class); }
     public function faithfulRecords(): HasMany { return $this->hasMany(Faithful::class); }
+    public function createdDonations(): HasMany { return $this->hasMany(Donation::class, 'created_by'); }
+    public function validatedDonations(): HasMany { return $this->hasMany(Donation::class, 'validated_by'); }
     protected function casts(): array { return ['email_verified_at' => 'datetime', 'password' => 'hashed']; }
 }
