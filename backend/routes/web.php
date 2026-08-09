@@ -13,9 +13,11 @@ use App\Http\Controllers\Admin\MosqueCouncilController;
 use App\Http\Controllers\Admin\ZakatController;
 use App\Http\Controllers\Admin\WaqfController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\LocaleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => view('welcome'));
+Route::post('/locale', LocaleController::class)->middleware('throttle:20,1')->name('locale.update');
 Route::get('/dashboard', fn () => view('dashboard'))->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
