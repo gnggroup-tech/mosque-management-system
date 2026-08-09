@@ -2,19 +2,75 @@
 
 namespace Tests\Feature\Authorization;
 
+use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class RolesAndPermissionsTest extends TestCase
 {
-    /**
-     * A basic feature test example.
-     */
-    public function test_example(): void
-    {
-        $response = $this->get('/');
+    use RefreshDatabase;
 
-        $response->assertStatus(200);
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolesAndPermissionsSeeder::class);
+    }
+
+    public function test_seeder_creates_the_three_global_roles(): void
+    {
+        $this->assertDatabaseHas('roles', ['name' => 'superadmin', 'guard_name' => 'web']);
+        $this->assertDatabaseHas('roles', ['name' => 'admin', 'guard_name' => 'web']);
+        $this->assertDatabaseHas('roles', ['name' => 'user', 'guard_name' => 'web']);
+        $this->assertSame(3, Role::count());
+    }
+
+    public function test_superadmin_receives_every_defined_permission(): void
+    {
+        $superadmin = Role::findByName('superadmin');
+
+        $this->assertSame(Permission::count(), $superadmin->permissions()->count());
+        $this->assertTrue($superadmin->hasPermissionTo('platform.manage'));
+        $this->assertTrue($superadmin->hasPermissionTo('admins.manage'));
+        $this->assertTrue($superadmin->hasPermissionTo('audit.view'));
+    }
+
+    public function test_admin_can_manage_local_resources_but_not_the_platform(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->assertTrue($admin->can('mosques.update'));
+        $this->assertTrue($admin->can('councils.create'));
+        $this->assertTrue($admin->can('finances.manage'));
+        $this->assertFalse($admin->can('platform.manage'));
+        $this->assertFalse($admin->can('admins.manage'));
+        $this->assertFalse($admin->can('audit.view'));
+        $this->assertFalse($admin->can('mosques.delete'));
+    }
+
+    public function test_user_has_read_only_access_and_can_manage_own_profile(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+
+        $this->assertTrue($user->can('mosques.view'));
+        $this->assertTrue($user->can('councils.view'));
+        $this->assertTrue($user->can('activities.view'));
+        $this->assertTrue($user->can('announcements.view'));
+        $this->assertTrue($user->can('profile.manage'));
+        $this->assertFalse($user->can('mosques.update'));
+        $this->assertFalse($user->can('finances.manage'));
+    }
+
+    public function test_seeder_can_be_run_more_than_once_without_duplicates(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $this->assertSame(3, Role::count());
+        $this->assertSame(27, Permission::count());
     }
 }
