@@ -11,6 +11,9 @@ use App\Models\User;
 use App\Models\ZakatBeneficiary;
 use App\Models\ZakatCollection;
 use App\Models\ZakatDistribution;
+use App\Models\WaqfAsset;
+use App\Models\WaqfExpense;
+use App\Models\WaqfRevenue;
 use App\Observers\CouncilMemberObserver;
 use App\Observers\DonationObserver;
 use App\Observers\FaithfulObserver;
@@ -18,6 +21,7 @@ use App\Observers\MosqueCouncilObserver;
 use App\Observers\MosqueObserver;
 use App\Observers\UserObserver;
 use App\Observers\ZakatObserver;
+use App\Observers\WaqfObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -34,5 +38,8 @@ class AppServiceProvider extends ServiceProvider
         ZakatBeneficiary::observe(ZakatObserver::class);
         ZakatCollection::observe(ZakatObserver::class);
         ZakatDistribution::observe(ZakatObserver::class);
+        WaqfAsset::observe(WaqfObserver::class);
+        WaqfExpense::observe(WaqfObserver::class);
+        WaqfRevenue::observe(WaqfObserver::class);
     }
 }
