@@ -6,11 +6,14 @@ use App\Models\AuditLog;
 use App\Models\Donation;
 use App\Models\Mosque;
 use App\Models\User;
+use App\Services\BackupRestorePreparer;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
 use RuntimeException;
@@ -167,6 +170,40 @@ class DataExportBackupTest extends TestCase
         $this->assertStringNotContainsString('secret database password', Artisan::output());
         $this->assertDatabaseHas('audit_logs', ['event' => 'backup.failed']);
         $this->assertStringNotContainsString('secret database password', AuditLog::query()->latest('id')->first()->toJson());
+    }
+
+    public function test_backed_up_user_can_be_prepared_for_valid_empty_database_restore(): void
+    {
+        Storage::fake('backups');
+        $user = User::factory()->create([
+            'email' => 'restore@example.com',
+            'password' => 'original-password',
+        ]);
+
+        $this->assertSame(Command::SUCCESS, Artisan::call('sgar:backup:create'));
+        $path = Storage::disk('backups')->allFiles()[0];
+        $encryptedUser = collect(explode("\n", trim(Storage::disk('backups')->get($path))))
+            ->map(fn (string $line) => json_decode($line, true))
+            ->firstWhere('table', 'users');
+        $payload = json_decode(Crypt::decryptString($encryptedUser['payload']), true);
+
+        $this->assertArrayNotHasKey('password', $payload);
+        $prepared = app(BackupRestorePreparer::class)->user($payload);
+        $this->assertNotEmpty($prepared['password']);
+        $this->assertFalse(Hash::check('original-password', $prepared['password']));
+        $this->assertNull($prepared['remember_token']);
+        $this->assertNotSame(
+            $prepared['password'],
+            app(BackupRestorePreparer::class)->user($payload)['password'],
+        );
+
+        DB::table('users')->where('id', $user->id)->delete();
+        DB::table('users')->insert($prepared);
+
+        $restored = DB::table('users')->where('email', 'restore@example.com')->first();
+        $this->assertNotNull($restored);
+        $this->assertNotNull($restored->password);
+        $this->assertFalse(Hash::check('original-password', $restored->password));
     }
 
     private function adminAndMosque(string $suffix = 'main'): array
