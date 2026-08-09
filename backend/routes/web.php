@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CouncilMemberController;
 use App\Http\Controllers\Admin\DonationController;
@@ -61,6 +62,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/waqf/revenues/{revenue}/validate', [WaqfController::class, 'validateRevenue'])->middleware('permission:waqf.manage')->name('waqf.revenues.validate');
         Route::post('/waqf/expenses', [WaqfController::class, 'storeExpense'])->middleware('permission:waqf.manage')->name('waqf.expenses.store');
         Route::post('/waqf/expenses/{expense}/validate', [WaqfController::class, 'validateExpense'])->middleware('permission:waqf.manage')->name('waqf.expenses.validate');
+        Route::get('/activities', [ActivityController::class, 'index'])->middleware('permission:activities.view')->name('activities.index');
+        Route::post('/activities', [ActivityController::class, 'store'])->middleware('permission:activities.manage')->name('activities.store');
+        Route::get('/activities/{activity}', [ActivityController::class, 'show'])->middleware('permission:activities.view')->name('activities.show');
+        Route::patch('/activities/{activity}', [ActivityController::class, 'update'])->middleware('permission:activities.manage')->name('activities.update');
+        Route::post('/activities/{activity}/publish', [ActivityController::class, 'publish'])->middleware('permission:activities.manage')->name('activities.publish');
+        Route::post('/activities/{activity}/cancel', [ActivityController::class, 'cancel'])->middleware('permission:activities.manage')->name('activities.cancel');
+        Route::post('/activities/{activity}/register', [ActivityController::class, 'register'])->middleware('permission:activities.view')->name('activities.register');
+        Route::delete('/activities/{activity}/register', [ActivityController::class, 'unregister'])->middleware('permission:activities.view')->name('activities.unregister');
+        Route::delete('/activities/{activity}', [ActivityController::class, 'destroy'])->middleware('permission:activities.manage')->name('activities.destroy');
         Route::get('/finances/report', [FinanceController::class, 'report'])->middleware('permission:finances.view')->name('finances.report');
         Route::post('/finances/subsidies', [FinanceController::class, 'storeSubsidy'])->middleware('permission:finances.manage')->name('finances.subsidies.store');
         Route::post('/finances/subsidies/{subsidy}/validate', [FinanceController::class, 'validateSubsidy'])->middleware('permission:finances.manage')->name('finances.subsidies.validate');
