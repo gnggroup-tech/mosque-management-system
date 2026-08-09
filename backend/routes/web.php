@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\MosqueController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])
         ->middleware('permission:audit.view')
         ->name('admin.audit-logs.index');
+
+    Route::prefix('admin')->name('admin.')->group(function (): void {
+        Route::get('/mosques', [MosqueController::class, 'index'])
+            ->middleware('permission:mosques.view')->name('mosques.index');
+        Route::post('/mosques', [MosqueController::class, 'store'])
+            ->middleware('permission:mosques.create')->name('mosques.store');
+        Route::get('/mosques/{mosque}', [MosqueController::class, 'show'])
+            ->middleware('permission:mosques.view')->name('mosques.show');
+        Route::patch('/mosques/{mosque}', [MosqueController::class, 'update'])
+            ->middleware('permission:mosques.update')->name('mosques.update');
+        Route::delete('/mosques/{mosque}', [MosqueController::class, 'destroy'])
+            ->middleware('permission:mosques.delete')->name('mosques.destroy');
+    });
 });
 
 require __DIR__.'/auth.php';
