@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\FaithfulController;
 use App\Http\Controllers\Admin\MosqueController;
 use App\Http\Controllers\Admin\MosqueCouncilController;
 use App\Http\Controllers\Admin\ZakatController;
+use App\Http\Controllers\Admin\WaqfController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -53,6 +54,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/zakat/beneficiaries', [ZakatController::class, 'storeBeneficiary'])->middleware('permission:zakat.manage')->name('zakat.beneficiaries.store');
         Route::post('/zakat/distributions', [ZakatController::class, 'storeDistribution'])->middleware('permission:zakat.manage')->name('zakat.distributions.store');
         Route::post('/zakat/distributions/{distribution}/validate', [ZakatController::class, 'validateDistribution'])->middleware('permission:zakat.manage')->name('zakat.distributions.validate');
+        Route::get('/waqf/assets', [WaqfController::class, 'index'])->middleware('permission:waqf.view')->name('waqf.assets.index');
+        Route::post('/waqf/assets', [WaqfController::class, 'storeAsset'])->middleware('permission:waqf.manage')->name('waqf.assets.store');
+        Route::post('/waqf/revenues', [WaqfController::class, 'storeRevenue'])->middleware('permission:waqf.manage')->name('waqf.revenues.store');
+        Route::post('/waqf/revenues/{revenue}/validate', [WaqfController::class, 'validateRevenue'])->middleware('permission:waqf.manage')->name('waqf.revenues.validate');
+        Route::post('/waqf/expenses', [WaqfController::class, 'storeExpense'])->middleware('permission:waqf.manage')->name('waqf.expenses.store');
+        Route::post('/waqf/expenses/{expense}/validate', [WaqfController::class, 'validateExpense'])->middleware('permission:waqf.manage')->name('waqf.expenses.validate');
     });
 });
 require __DIR__.'/auth.php';
