@@ -7,7 +7,11 @@ use Illuminate\Validation\Rule;
 
 class StoreExpenseRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->can('finances.manage') === true; }
+    public function authorize(): bool
+    {
+        return $this->user()?->can('finances.manage') === true;
+    }
+
     public function rules(): array
     {
         return [

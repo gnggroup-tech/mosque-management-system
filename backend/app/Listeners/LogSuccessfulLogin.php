@@ -7,9 +7,7 @@ use Illuminate\Auth\Events\Login;
 
 class LogSuccessfulLogin
 {
-    public function __construct(private readonly AuditLogger $auditLogger)
-    {
-    }
+    public function __construct(private readonly AuditLogger $auditLogger) {}
 
     public function handle(Login $event): void
     {

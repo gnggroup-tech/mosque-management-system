@@ -7,7 +7,10 @@ use Illuminate\Validation\Rule;
 
 class UpdateDonationRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->can('contributions.manage') === true; }
+    public function authorize(): bool
+    {
+        return $this->user()?->can('contributions.manage') === true;
+    }
 
     public function rules(): array
     {

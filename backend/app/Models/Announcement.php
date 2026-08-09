@@ -19,7 +19,18 @@ class Announcement extends Model
         return ['visible_from' => 'datetime', 'visible_until' => 'datetime', 'published_at' => 'datetime'];
     }
 
-    public function mosque(): BelongsTo { return $this->belongsTo(Mosque::class); }
-    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
-    public function receipts(): HasMany { return $this->hasMany(AnnouncementReceipt::class); }
+    public function mosque(): BelongsTo
+    {
+        return $this->belongsTo(Mosque::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function receipts(): HasMany
+    {
+        return $this->hasMany(AnnouncementReceipt::class);
+    }
 }

@@ -7,7 +7,11 @@ use Illuminate\Validation\Rule;
 
 class StoreWaqfAssetRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->can('waqf.manage') === true; }
+    public function authorize(): bool
+    {
+        return $this->user()?->can('waqf.manage') === true;
+    }
+
     public function rules(): array
     {
         return [

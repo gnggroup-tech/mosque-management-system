@@ -3,11 +3,14 @@
 namespace App\Http\Requests\Council;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreCouncilMeetingRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->can('council-meetings.manage') ?? false; }
+    public function authorize(): bool
+    {
+        return $this->user()?->can('council-meetings.manage') ?? false;
+    }
+
     public function rules(): array
     {
         return [

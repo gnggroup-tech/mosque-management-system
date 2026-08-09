@@ -7,11 +7,15 @@ use Illuminate\Validation\Rule;
 
 class UpdateFaithfulRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->can('faithful.manage') === true; }
+    public function authorize(): bool
+    {
+        return $this->user()?->can('faithful.manage') === true;
+    }
 
     public function rules(): array
     {
         $faithful = $this->route('faithful');
+
         return [
             'mosque_id' => ['sometimes', 'required', 'integer', Rule::exists('mosques', 'id')->whereNull('deleted_at')],
             'user_id' => ['nullable', 'integer', Rule::exists('users', 'id'), Rule::unique('faithful', 'user_id')->ignore($faithful)],

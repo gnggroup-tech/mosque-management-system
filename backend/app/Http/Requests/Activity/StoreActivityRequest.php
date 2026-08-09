@@ -7,7 +7,10 @@ use Illuminate\Validation\Rule;
 
 class StoreActivityRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->can('activities.manage') === true; }
+    public function authorize(): bool
+    {
+        return $this->user()?->can('activities.manage') === true;
+    }
 
     public function rules(): array
     {

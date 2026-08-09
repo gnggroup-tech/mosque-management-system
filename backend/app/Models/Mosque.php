@@ -13,17 +13,69 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Mosque extends Model
 {
     use HasFactory, SoftDeletes;
-    protected function casts(): array { return ['infrastructures' => 'array', 'latitude' => 'decimal:7', 'longitude' => 'decimal:7']; }
-    public function administrator(): BelongsTo { return $this->belongsTo(User::class, 'admin_id'); }
-    public function councils(): HasMany { return $this->hasMany(MosqueCouncil::class); }
-    public function faithful(): HasMany { return $this->hasMany(Faithful::class); }
-    public function donations(): HasMany { return $this->hasMany(Donation::class); }
-    public function zakatCollections(): HasMany { return $this->hasMany(ZakatCollection::class); }
-    public function zakatBeneficiaries(): HasMany { return $this->hasMany(ZakatBeneficiary::class); }
-    public function zakatDistributions(): HasMany { return $this->hasMany(ZakatDistribution::class); }
-    public function waqfAssets(): HasMany { return $this->hasMany(WaqfAsset::class); }
-    public function subsidies(): HasMany { return $this->hasMany(Subsidy::class); }
-    public function expenses(): HasMany { return $this->hasMany(Expense::class); }
-    public function activities(): HasMany { return $this->hasMany(Activity::class); }
-    public function announcements(): HasMany { return $this->hasMany(Announcement::class); }
+
+    protected function casts(): array
+    {
+        return ['infrastructures' => 'array', 'latitude' => 'decimal:7', 'longitude' => 'decimal:7'];
+    }
+
+    public function administrator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'admin_id');
+    }
+
+    public function councils(): HasMany
+    {
+        return $this->hasMany(MosqueCouncil::class);
+    }
+
+    public function faithful(): HasMany
+    {
+        return $this->hasMany(Faithful::class);
+    }
+
+    public function donations(): HasMany
+    {
+        return $this->hasMany(Donation::class);
+    }
+
+    public function zakatCollections(): HasMany
+    {
+        return $this->hasMany(ZakatCollection::class);
+    }
+
+    public function zakatBeneficiaries(): HasMany
+    {
+        return $this->hasMany(ZakatBeneficiary::class);
+    }
+
+    public function zakatDistributions(): HasMany
+    {
+        return $this->hasMany(ZakatDistribution::class);
+    }
+
+    public function waqfAssets(): HasMany
+    {
+        return $this->hasMany(WaqfAsset::class);
+    }
+
+    public function subsidies(): HasMany
+    {
+        return $this->hasMany(Subsidy::class);
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class);
+    }
+
+    public function announcements(): HasMany
+    {
+        return $this->hasMany(Announcement::class);
+    }
 }

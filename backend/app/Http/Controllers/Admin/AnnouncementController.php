@@ -12,6 +12,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class AnnouncementController extends Controller
@@ -28,6 +29,7 @@ class AnnouncementController extends Controller
             ->when($request->filled('priority'), fn (Builder $q) => $q->where('priority', $request->string('priority')))
             ->orderByDesc('published_at')->orderByDesc('id')
             ->paginate(min(max($request->integer('per_page', 20), 1), 100));
+
         return response()->json($items);
     }
 
@@ -37,12 +39,14 @@ class AnnouncementController extends Controller
         $this->ensureScopeManageable($request->user(), $data['mosque_id'] ?? null);
         $data['created_by'] = $request->user()->id;
         $data['status'] = 'draft';
+
         return response()->json(Announcement::query()->create($data), 201);
     }
 
     public function show(Request $request, Announcement $announcement): JsonResponse
     {
         abort_unless($this->visibleTo($request->user())->whereKey($announcement)->exists(), 403);
+
         return response()->json($announcement->load('mosque:id,code,name'));
     }
 
@@ -53,6 +57,7 @@ class AnnouncementController extends Controller
         $data = $request->validated();
         $this->ensureScopeManageable($request->user(), $data['mosque_id'] ?? $announcement->mosque_id);
         $announcement->update($data);
+
         return response()->json($announcement->fresh());
     }
 
@@ -69,6 +74,7 @@ class AnnouncementController extends Controller
                 ['delivered_at' => now()]
             ));
         });
+
         return response()->json($announcement->fresh()->loadCount('receipts'));
     }
 
@@ -76,6 +82,7 @@ class AnnouncementController extends Controller
     {
         $receipt = AnnouncementReceipt::query()->whereBelongsTo($announcement)->where('user_id', $request->user()->id)->firstOrFail();
         $receipt->update(['read_at' => $receipt->read_at ?? now()]);
+
         return response()->json($receipt->fresh());
     }
 
@@ -84,21 +91,25 @@ class AnnouncementController extends Controller
         $this->ensureScopeManageable($request->user(), $announcement->mosque_id);
         abort_unless($announcement->status === 'draft', 422);
         $announcement->delete();
+
         return response()->json(status: 204);
     }
 
     private function visibleTo(User $user): Builder
     {
-        if ($user->hasRole('superadmin')) { return Announcement::query(); }
+        if ($user->hasRole('superadmin')) {
+            return Announcement::query();
+        }
         if ($user->hasRole('admin')) {
             return Announcement::query()->where(fn (Builder $q) => $q->whereNull('mosque_id')->orWhereHas('mosque', fn (Builder $m) => $m->where('admin_id', $user->id)));
         }
+
         return Announcement::query()->whereHas('receipts', fn (Builder $q) => $q->where('user_id', $user->id))
             ->where('status', 'published')->where(fn (Builder $q) => $q->whereNull('visible_from')->orWhere('visible_from', '<=', now()))
             ->where(fn (Builder $q) => $q->whereNull('visible_until')->orWhere('visible_until', '>=', now()));
     }
 
-    private function recipients(Announcement $announcement): \Illuminate\Support\Collection
+    private function recipients(Announcement $announcement): Collection
     {
         $query = User::query();
         if ($announcement->mosque_id !== null) {
@@ -106,14 +117,21 @@ class AnnouncementController extends Controller
             $query->where(fn (Builder $q) => $q->whereHas('administeredMosques', fn (Builder $m) => $m->whereKey($mosqueId))
                 ->orWhereHas('faithfulRecords', fn (Builder $f) => $f->where('mosque_id', $mosqueId)));
         }
-        if ($announcement->audience === 'administrators') { $query->role(['superadmin', 'admin']); }
-        if ($announcement->audience === 'faithful') { $query->role('user'); }
+        if ($announcement->audience === 'administrators') {
+            $query->role(['superadmin', 'admin']);
+        }
+        if ($announcement->audience === 'faithful') {
+            $query->role('user');
+        }
+
         return $query->get();
     }
 
     private function ensureScopeManageable(User $user, ?int $mosqueId): void
     {
-        if ($user->hasRole('superadmin')) { return; }
+        if ($user->hasRole('superadmin')) {
+            return;
+        }
         abort_if($mosqueId === null, 403, 'Seul le superadministrateur peut diffuser une annonce nationale.');
         abort_unless(Mosque::query()->whereKey($mosqueId)->where('admin_id', $user->id)->exists(), 403);
     }

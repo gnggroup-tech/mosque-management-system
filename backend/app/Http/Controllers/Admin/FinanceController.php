@@ -70,6 +70,7 @@ class FinanceController extends Controller
         $this->ensureManageable($request->user(), (int) $data['mosque_id']);
         $data += ['currency' => 'GNF'];
         $data += ['reference_number' => $this->number('SUB'), 'status' => 'pending', 'created_by' => $request->user()->id];
+
         return response()->json(Subsidy::query()->create($data), 201);
     }
 
@@ -81,6 +82,7 @@ class FinanceController extends Controller
             abort_if($locked->status !== 'pending', 422, 'Cette subvention a déjà été traitée.');
             $locked->update(['status' => 'validated', 'validated_by' => $request->user()->id, 'validated_at' => now()]);
         });
+
         return response()->json($subsidy->fresh());
     }
 
@@ -90,6 +92,7 @@ class FinanceController extends Controller
         $this->ensureManageable($request->user(), (int) $data['mosque_id']);
         $data += ['currency' => 'GNF'];
         $data += ['reference_number' => $this->number('EXP'), 'status' => 'pending', 'created_by' => $request->user()->id];
+
         return response()->json(Expense::query()->create($data), 201);
     }
 
@@ -103,6 +106,7 @@ class FinanceController extends Controller
             abort_if((float) $locked->amount > $available, 422, 'Fonds disponibles insuffisants.');
             $locked->update(['status' => 'validated', 'validated_by' => $request->user()->id, 'validated_at' => now()]);
         });
+
         return response()->json($expense->fresh());
     }
 
@@ -112,6 +116,7 @@ class FinanceController extends Controller
         // Zakat and Waqf remain restricted to their dedicated distribution circuits.
         $subsidies = Subsidy::query()->where('mosque_id', $mosqueId)->where('currency', $currency)->where('status', 'validated')->lockForUpdate()->sum('amount');
         $expenses = Expense::query()->where('mosque_id', $mosqueId)->where('currency', $currency)->where('status', 'validated')->lockForUpdate()->sum('amount');
+
         return (float) $donations + (float) $subsidies - (float) $expenses;
     }
 

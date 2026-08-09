@@ -26,8 +26,23 @@ class Faithful extends Model
         return ['birth_date' => 'date', 'joined_at' => 'date', 'consent_at' => 'datetime'];
     }
 
-    public function mosque(): BelongsTo { return $this->belongsTo(Mosque::class); }
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
-    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
-    public function donations(): HasMany { return $this->hasMany(Donation::class); }
+    public function mosque(): BelongsTo
+    {
+        return $this->belongsTo(Mosque::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function donations(): HasMany
+    {
+        return $this->hasMany(Donation::class);
+    }
 }

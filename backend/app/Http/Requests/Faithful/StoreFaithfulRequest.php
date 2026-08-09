@@ -7,7 +7,10 @@ use Illuminate\Validation\Rule;
 
 class StoreFaithfulRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->can('faithful.manage') === true; }
+    public function authorize(): bool
+    {
+        return $this->user()?->can('faithful.manage') === true;
+    }
 
     public function rules(): array
     {

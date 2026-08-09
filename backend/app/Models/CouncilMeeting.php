@@ -12,9 +12,29 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class CouncilMeeting extends Model
 {
     use SoftDeletes;
-    protected function casts(): array { return ['scheduled_at' => 'datetime', 'notice_sent_at' => 'datetime', 'held_at' => 'datetime']; }
-    public function council(): BelongsTo { return $this->belongsTo(MosqueCouncil::class, 'mosque_council_id'); }
-    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
-    public function participants(): HasMany { return $this->hasMany(CouncilMeetingParticipant::class); }
-    public function decisions(): HasMany { return $this->hasMany(CouncilDecision::class); }
+
+    protected function casts(): array
+    {
+        return ['scheduled_at' => 'datetime', 'notice_sent_at' => 'datetime', 'held_at' => 'datetime'];
+    }
+
+    public function council(): BelongsTo
+    {
+        return $this->belongsTo(MosqueCouncil::class, 'mosque_council_id');
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function participants(): HasMany
+    {
+        return $this->hasMany(CouncilMeetingParticipant::class);
+    }
+
+    public function decisions(): HasMany
+    {
+        return $this->hasMany(CouncilDecision::class);
+    }
 }

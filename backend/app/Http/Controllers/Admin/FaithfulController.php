@@ -28,6 +28,7 @@ class FaithfulController extends Controller
             ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
             ->orderBy('last_name')->orderBy('first_name')
             ->paginate(min(max($request->integer('per_page', 20), 1), 100));
+
         return response()->json($records);
     }
 
@@ -37,12 +38,14 @@ class FaithfulController extends Controller
         $this->ensureMosqueManageable($request->user(), (int) $data['mosque_id']);
         $data['created_by'] = $request->user()->getKey();
         $faithful = Faithful::query()->create($data);
+
         return response()->json($faithful->load('mosque:id,code,name'), 201);
     }
 
     public function show(Request $request, Faithful $faithful): JsonResponse
     {
         abort_unless($this->visibleTo($request->user())->whereKey($faithful)->exists(), 403);
+
         return response()->json($faithful->load('mosque:id,code,name'));
     }
 
@@ -50,8 +53,11 @@ class FaithfulController extends Controller
     {
         $this->ensureMosqueManageable($request->user(), $faithful->mosque_id);
         $data = $request->validated();
-        if (isset($data['mosque_id'])) { $this->ensureMosqueManageable($request->user(), (int) $data['mosque_id']); }
+        if (isset($data['mosque_id'])) {
+            $this->ensureMosqueManageable($request->user(), (int) $data['mosque_id']);
+        }
         $faithful->update($data);
+
         return response()->json($faithful->fresh()->load('mosque:id,code,name'));
     }
 
@@ -60,6 +66,7 @@ class FaithfulController extends Controller
         abort_unless($request->user()->can('faithful.manage'), 403);
         $this->ensureMosqueManageable($request->user(), $faithful->mosque_id);
         $faithful->delete();
+
         return response()->json(status: 204);
     }
 

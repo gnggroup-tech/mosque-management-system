@@ -7,9 +7,7 @@ use App\Services\AuditLogger;
 
 class MosqueObserver
 {
-    public function __construct(private readonly AuditLogger $auditLogger)
-    {
-    }
+    public function __construct(private readonly AuditLogger $auditLogger) {}
 
     public function created(Mosque $mosque): void
     {

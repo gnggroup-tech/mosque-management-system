@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  laravel:
+    name: Laravel validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      APP_ENV: testing
+      APP_DEBUG: false
+      APP_URL: http://localhost
+      BROADCAST_CONNECTION: 'null'
+      CACHE_STORE: array
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
+      FILESYSTEM_DISK: local
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        env:
+          fail-fast: true
+        with:
+          php-version: '8.3'
+          extensions: ctype, dom, fileinfo, filter, iconv, mbstring, openssl, pdo_sqlite, session, sqlite3, tokenizer, xml, xmlwriter
+          coverage: none
+          tools: composer:v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Locate Composer cache
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-php-8.3-composer-${{ hashFiles('backend/composer.lock') }}
+
+      - name: Prepare Laravel directories
+        run: mkdir -p bootstrap/cache storage/framework/cache storage/framework/sessions storage/framework/views storage/logs
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Validate Composer files
+        run: composer validate --strict --no-check-publish
+
+      - name: Prepare isolated test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force --no-interaction
+
+      - name: Install frontend dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build frontend assets
+        run: |
+          npm run build
+          test -f public/build/manifest.json
+
+      - name: Reject tracked sensitive files
+        working-directory: .
+        run: |
+          sensitive_files="$(git ls-files | grep -E '(^|/)\.env($|\.)|(^|/)(auth\.json|database\.sqlite|id_rsa)$|\.(key|pem)$' | grep -vE '(^|/)\.env\.example$' || true)"
+          if [ -n "$sensitive_files" ]; then
+            echo "Sensitive file paths are tracked:"
+            echo "$sensitive_files"
+            exit 1
+          fi
+
+      - name: Validate translation JSON
+        run: php -r 'foreach (["lang/fr.json", "lang/en.json", "lang/ar.json"] as $file) { json_decode(file_get_contents($file), true, 512, JSON_THROW_ON_ERROR); echo $file." is valid".PHP_EOL; }'
+
+      - name: Check PHP syntax and Laravel configuration
+        run: |
+          while IFS= read -r -d '' file; do
+            php -l "$file" > /dev/null
+          done < <(find app bootstrap config database routes tests -type f -name '*.php' -print0)
+          php artisan config:cache --no-interaction
+          php artisan config:clear --no-interaction
+
+      - name: Check formatting
+        run: vendor/bin/pint --test
+
+      - name: Run PHPUnit suite
+        run: php artisan test

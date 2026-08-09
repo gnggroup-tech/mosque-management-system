@@ -8,9 +8,21 @@ use Illuminate\Database\Eloquent\Model;
 class FinanceObserver
 {
     public function __construct(private readonly AuditLogger $auditLogger) {}
-    public function created(Model $record): void { $this->write('created', $record); }
-    public function updated(Model $record): void { $this->write('updated', $record); }
-    public function deleted(Model $record): void { $this->write('deleted', $record); }
+
+    public function created(Model $record): void
+    {
+        $this->write('created', $record);
+    }
+
+    public function updated(Model $record): void
+    {
+        $this->write('updated', $record);
+    }
+
+    public function deleted(Model $record): void
+    {
+        $this->write('deleted', $record);
+    }
 
     private function write(string $action, Model $record): void
     {

@@ -7,11 +7,15 @@ use Illuminate\Validation\Rule;
 
 class UpdateCouncilMemberRequest extends FormRequest
 {
-    public function authorize(): bool { return $this->user()?->can('council-members.update') === true; }
+    public function authorize(): bool
+    {
+        return $this->user()?->can('council-members.update') === true;
+    }
 
     public function rules(): array
     {
         $start = $this->input('started_at', $this->route('member')?->started_at?->toDateString());
+
         return [
             'function' => ['sometimes', 'required', Rule::in(['president', 'vice_president', 'imam', 'muezzin', 'secretary', 'treasurer', 'advisor', 'other'])],
             'title' => ['nullable', 'string', 'max:100'],

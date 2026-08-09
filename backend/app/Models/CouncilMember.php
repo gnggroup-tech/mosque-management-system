@@ -21,7 +21,18 @@ class CouncilMember extends Model
         return ['started_at' => 'date', 'ended_at' => 'date'];
     }
 
-    public function council(): BelongsTo { return $this->belongsTo(MosqueCouncil::class, 'mosque_council_id'); }
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
-    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
+    public function council(): BelongsTo
+    {
+        return $this->belongsTo(MosqueCouncil::class, 'mosque_council_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

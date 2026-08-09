@@ -23,6 +23,7 @@ class CouncilMemberController extends Controller
             ->when($request->filled('function'), fn (Builder $q) => $q->where('function', $request->string('function')))
             ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
             ->latest('started_at')->paginate(min(max($request->integer('per_page', 20), 1), 100));
+
         return response()->json($members);
     }
 
@@ -33,15 +34,19 @@ class CouncilMemberController extends Controller
         $this->ensureManageable($request->user(), $council);
         abort_if($council->status !== 'active', 422, 'Les membres ne peuvent être ajoutés qu’à un conseil actif.');
         $duplicate = CouncilMember::query()->where('mosque_council_id', $council->id)->where('user_id', $data['user_id'])->where('status', 'active')->exists();
-        if ($duplicate) { throw ValidationException::withMessages(['user_id' => 'Cet utilisateur est déjà membre actif de ce conseil.']); }
+        if ($duplicate) {
+            throw ValidationException::withMessages(['user_id' => 'Cet utilisateur est déjà membre actif de ce conseil.']);
+        }
         $data['created_by'] = $request->user()->getKey();
         $member = CouncilMember::query()->create($data);
+
         return response()->json($member->load(['user:id,name,email', 'council:id,mosque_id,name,status']), 201);
     }
 
     public function show(Request $request, CouncilMember $member): JsonResponse
     {
         abort_unless($this->visibleTo($request->user())->whereKey($member)->exists(), 403);
+
         return response()->json($member->load(['user:id,name,email', 'council:id,mosque_id,name,status']));
     }
 
@@ -50,6 +55,7 @@ class CouncilMemberController extends Controller
         $member->loadMissing('council.mosque:id,admin_id');
         $this->ensureManageable($request->user(), $member->council);
         $member->update($request->validated());
+
         return response()->json($member->fresh()->load(['user:id,name,email', 'council:id,mosque_id,name,status']));
     }
 
@@ -59,6 +65,7 @@ class CouncilMemberController extends Controller
         $member->loadMissing('council.mosque:id,admin_id');
         $this->ensureManageable($request->user(), $member->council);
         $member->delete();
+
         return response()->json(status: 204);
     }
 
