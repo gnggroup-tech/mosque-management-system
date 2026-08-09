@@ -44,7 +44,7 @@ class FinanceController extends Controller
         $resources = [
             'donations' => $sum(Donation::class, 'received_at'),
             'zakat' => $sum(ZakatCollection::class, 'collected_at'),
-            'waqf' => $sum(WaqfRevenue::class, 'received_at', 'waqf_asset_id'),
+            'waqf' => 0.0,
             'subsidies' => $sum(Subsidy::class, 'received_at'),
         ];
         // Waqf belongs to a mosque through its asset, so calculate it separately.
@@ -109,10 +109,10 @@ class FinanceController extends Controller
     private function availableFunds(int $mosqueId, string $currency): float
     {
         $donations = Donation::query()->where('mosque_id', $mosqueId)->where('currency', $currency)->where('status', 'validated')->lockForUpdate()->sum('amount');
-        $zakat = ZakatCollection::query()->where('mosque_id', $mosqueId)->where('currency', $currency)->where('status', 'validated')->lockForUpdate()->sum('amount');
+        // Zakat and Waqf remain restricted to their dedicated distribution circuits.
         $subsidies = Subsidy::query()->where('mosque_id', $mosqueId)->where('currency', $currency)->where('status', 'validated')->lockForUpdate()->sum('amount');
         $expenses = Expense::query()->where('mosque_id', $mosqueId)->where('currency', $currency)->where('status', 'validated')->lockForUpdate()->sum('amount');
-        return (float) $donations + (float) $zakat + (float) $subsidies - (float) $expenses;
+        return (float) $donations + (float) $subsidies - (float) $expenses;
     }
 
     private function visibleMosques(User $user): Builder
