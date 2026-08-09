@@ -17,4 +17,5 @@ class Mosque extends Model
     public function administrator(): BelongsTo { return $this->belongsTo(User::class, 'admin_id'); }
     public function councils(): HasMany { return $this->hasMany(MosqueCouncil::class); }
     public function faithful(): HasMany { return $this->hasMany(Faithful::class); }
+    public function donations(): HasMany { return $this->hasMany(Donation::class); }
 }

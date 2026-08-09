@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CouncilMemberController;
+use App\Http\Controllers\Admin\DonationController;
 use App\Http\Controllers\Admin\FaithfulController;
 use App\Http\Controllers\Admin\MosqueController;
 use App\Http\Controllers\Admin\MosqueCouncilController;
@@ -38,6 +39,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/faithful/{faithful}', [FaithfulController::class, 'show'])->middleware('permission:faithful.view')->name('faithful.show');
         Route::patch('/faithful/{faithful}', [FaithfulController::class, 'update'])->middleware('permission:faithful.manage')->name('faithful.update');
         Route::delete('/faithful/{faithful}', [FaithfulController::class, 'destroy'])->middleware('permission:faithful.manage')->name('faithful.destroy');
+        Route::get('/donations', [DonationController::class, 'index'])->middleware('permission:contributions.view')->name('donations.index');
+        Route::post('/donations', [DonationController::class, 'store'])->middleware('permission:contributions.manage')->name('donations.store');
+        Route::get('/donations/{donation}', [DonationController::class, 'show'])->middleware('permission:contributions.view')->name('donations.show');
+        Route::patch('/donations/{donation}', [DonationController::class, 'update'])->middleware('permission:contributions.manage')->name('donations.update');
+        Route::post('/donations/{donation}/validate', [DonationController::class, 'validateDonation'])->middleware('permission:contributions.manage')->name('donations.validate');
+        Route::post('/donations/{donation}/reject', [DonationController::class, 'reject'])->middleware('permission:contributions.manage')->name('donations.reject');
+        Route::delete('/donations/{donation}', [DonationController::class, 'destroy'])->middleware('permission:contributions.manage')->name('donations.destroy');
     });
 });
 require __DIR__.'/auth.php';
