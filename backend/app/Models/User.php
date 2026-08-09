@@ -24,6 +24,11 @@ class User extends Authenticatable
         return $this->hasMany(Mosque::class, 'admin_id');
     }
 
+    public function createdCouncils(): HasMany
+    {
+        return $this->hasMany(MosqueCouncil::class, 'created_by');
+    }
+
     protected function casts(): array
     {
         return [

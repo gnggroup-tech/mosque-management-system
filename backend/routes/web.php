@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\MosqueController;
+use App\Http\Controllers\Admin\MosqueCouncilController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,17 @@ Route::middleware('auth')->group(function () {
             ->middleware('permission:mosques.update')->name('mosques.update');
         Route::delete('/mosques/{mosque}', [MosqueController::class, 'destroy'])
             ->middleware('permission:mosques.delete')->name('mosques.destroy');
+
+        Route::get('/councils', [MosqueCouncilController::class, 'index'])
+            ->middleware('permission:councils.view')->name('councils.index');
+        Route::post('/councils', [MosqueCouncilController::class, 'store'])
+            ->middleware('permission:councils.create')->name('councils.store');
+        Route::get('/councils/{council}', [MosqueCouncilController::class, 'show'])
+            ->middleware('permission:councils.view')->name('councils.show');
+        Route::patch('/councils/{council}', [MosqueCouncilController::class, 'update'])
+            ->middleware('permission:councils.update')->name('councils.update');
+        Route::delete('/councils/{council}', [MosqueCouncilController::class, 'destroy'])
+            ->middleware('permission:councils.delete')->name('councils.destroy');
     });
 });
 
