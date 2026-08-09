@@ -19,7 +19,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'council-members.view', 'council-members.create', 'council-members.update', 'council-members.delete',
             'users.view', 'users.create', 'users.update', 'users.delete',
             'faithful.view', 'faithful.manage', 'contributions.view', 'contributions.manage',
-            'zakat.view', 'zakat.manage',
+            'zakat.view', 'zakat.manage', 'waqf.view', 'waqf.manage',
             'finances.view', 'finances.manage', 'activities.view', 'activities.manage',
             'announcements.view', 'announcements.manage', 'reports.view', 'audit.view', 'profile.manage',
         ];
@@ -34,7 +34,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'council-members.view', 'council-members.create', 'council-members.update', 'council-members.delete',
             'users.view', 'users.create', 'users.update', 'users.delete',
             'faithful.view', 'faithful.manage', 'contributions.view', 'contributions.manage',
-            'zakat.view', 'zakat.manage',
+            'zakat.view', 'zakat.manage', 'waqf.view', 'waqf.manage',
             'finances.view', 'finances.manage', 'activities.view', 'activities.manage',
             'announcements.view', 'announcements.manage', 'reports.view', 'profile.manage',
         ]);
