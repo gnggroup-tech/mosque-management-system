@@ -25,4 +25,5 @@ class Mosque extends Model
     public function subsidies(): HasMany { return $this->hasMany(Subsidy::class); }
     public function expenses(): HasMany { return $this->hasMany(Expense::class); }
     public function activities(): HasMany { return $this->hasMany(Activity::class); }
+    public function announcements(): HasMany { return $this->hasMany(Announcement::class); }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ActivityController;
+use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CouncilMemberController;
 use App\Http\Controllers\Admin\DonationController;
@@ -71,6 +72,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/activities/{activity}/register', [ActivityController::class, 'register'])->middleware('permission:activities.view')->name('activities.register');
         Route::delete('/activities/{activity}/register', [ActivityController::class, 'unregister'])->middleware('permission:activities.view')->name('activities.unregister');
         Route::delete('/activities/{activity}', [ActivityController::class, 'destroy'])->middleware('permission:activities.manage')->name('activities.destroy');
+        Route::get('/announcements', [AnnouncementController::class, 'index'])->middleware('permission:announcements.view')->name('announcements.index');
+        Route::post('/announcements', [AnnouncementController::class, 'store'])->middleware('permission:announcements.manage')->name('announcements.store');
+        Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show'])->middleware('permission:announcements.view')->name('announcements.show');
+        Route::patch('/announcements/{announcement}', [AnnouncementController::class, 'update'])->middleware('permission:announcements.manage')->name('announcements.update');
+        Route::post('/announcements/{announcement}/publish', [AnnouncementController::class, 'publish'])->middleware('permission:announcements.manage')->name('announcements.publish');
+        Route::post('/announcements/{announcement}/read', [AnnouncementController::class, 'markRead'])->middleware('permission:announcements.view')->name('announcements.read');
+        Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->middleware('permission:announcements.manage')->name('announcements.destroy');
         Route::get('/finances/report', [FinanceController::class, 'report'])->middleware('permission:finances.view')->name('finances.report');
         Route::post('/finances/subsidies', [FinanceController::class, 'storeSubsidy'])->middleware('permission:finances.manage')->name('finances.subsidies.store');
         Route::post('/finances/subsidies/{subsidy}/validate', [FinanceController::class, 'validateSubsidy'])->middleware('permission:finances.manage')->name('finances.subsidies.validate');
