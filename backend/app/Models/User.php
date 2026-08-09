@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -18,22 +17,8 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable;
-
-    public function administeredMosques(): HasMany
-    {
-        return $this->hasMany(Mosque::class, 'admin_id');
-    }
-
-    public function createdCouncils(): HasMany
-    {
-        return $this->hasMany(MosqueCouncil::class, 'created_by');
-    }
-
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    public function administeredMosques(): HasMany { return $this->hasMany(Mosque::class, 'admin_id'); }
+    public function createdCouncils(): HasMany { return $this->hasMany(MosqueCouncil::class, 'created_by'); }
+    public function councilMemberships(): HasMany { return $this->hasMany(CouncilMember::class); }
+    protected function casts(): array { return ['email_verified_at' => 'datetime', 'password' => 'hashed']; }
 }
