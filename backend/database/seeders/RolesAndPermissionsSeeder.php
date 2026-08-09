@@ -36,7 +36,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'finances.view', 'finances.manage', 'activities.view', 'activities.manage',
             'announcements.view', 'announcements.manage', 'reports.view', 'profile.manage',
         ]);
-        $user->syncPermissions(['mosques.view', 'councils.view', 'council-members.view', 'activities.view', 'announcements.view', 'profile.manage']);
+        $user->syncPermissions(['mosques.view', 'councils.view', 'council-members.view', 'faithful.view', 'activities.view', 'announcements.view', 'profile.manage']);
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

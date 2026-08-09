@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CouncilMemberController;
+use App\Http\Controllers\Admin\FaithfulController;
 use App\Http\Controllers\Admin\MosqueController;
 use App\Http\Controllers\Admin\MosqueCouncilController;
 use App\Http\Controllers\ProfileController;
@@ -32,6 +33,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/council-members/{member}', [CouncilMemberController::class, 'show'])->middleware('permission:council-members.view')->name('council-members.show');
         Route::patch('/council-members/{member}', [CouncilMemberController::class, 'update'])->middleware('permission:council-members.update')->name('council-members.update');
         Route::delete('/council-members/{member}', [CouncilMemberController::class, 'destroy'])->middleware('permission:council-members.delete')->name('council-members.destroy');
+        Route::get('/faithful', [FaithfulController::class, 'index'])->middleware('permission:faithful.view')->name('faithful.index');
+        Route::post('/faithful', [FaithfulController::class, 'store'])->middleware('permission:faithful.manage')->name('faithful.store');
+        Route::get('/faithful/{faithful}', [FaithfulController::class, 'show'])->middleware('permission:faithful.view')->name('faithful.show');
+        Route::patch('/faithful/{faithful}', [FaithfulController::class, 'update'])->middleware('permission:faithful.manage')->name('faithful.update');
+        Route::delete('/faithful/{faithful}', [FaithfulController::class, 'destroy'])->middleware('permission:faithful.manage')->name('faithful.destroy');
     });
 });
 require __DIR__.'/auth.php';
