@@ -3,17 +3,18 @@
 use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\AuditLogController;
-use App\Http\Controllers\Admin\CouncilMemberController;
 use App\Http\Controllers\Admin\CouncilMeetingController;
+use App\Http\Controllers\Admin\CouncilMemberController;
 use App\Http\Controllers\Admin\DonationController;
 use App\Http\Controllers\Admin\FaithfulController;
 use App\Http\Controllers\Admin\FinanceController;
 use App\Http\Controllers\Admin\MosqueController;
 use App\Http\Controllers\Admin\MosqueCouncilController;
-use App\Http\Controllers\Admin\ZakatController;
+use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Admin\WaqfController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\ZakatController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => view('welcome'));
@@ -90,6 +91,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/announcements/{announcement}/read', [AnnouncementController::class, 'markRead'])->middleware('permission:announcements.view')->name('announcements.read');
         Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->middleware('permission:announcements.manage')->name('announcements.destroy');
         Route::get('/finances/report', [FinanceController::class, 'report'])->middleware('permission:finances.view')->name('finances.report');
+        Route::get('/reports', [ReportExportController::class, 'index'])->middleware('permission:reports.view')->name('reports.index');
+        Route::get('/reports/export', [ReportExportController::class, 'export'])->middleware('permission:reports.view')->name('reports.export');
         Route::post('/finances/subsidies', [FinanceController::class, 'storeSubsidy'])->middleware('permission:finances.manage')->name('finances.subsidies.store');
         Route::post('/finances/subsidies/{subsidy}/validate', [FinanceController::class, 'validateSubsidy'])->middleware('permission:finances.manage')->name('finances.subsidies.validate');
         Route::post('/finances/expenses', [FinanceController::class, 'storeExpense'])->middleware('permission:finances.manage')->name('finances.expenses.store');
