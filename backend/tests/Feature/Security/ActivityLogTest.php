@@ -57,7 +57,7 @@ class ActivityLogTest extends TestCase
         $this->actingAs($superadmin)
             ->getJson(route('admin.audit-logs.index'))
             ->assertOk()
-            ->assertJsonStructure(['data', 'links', 'meta']);
+            ->assertJsonStructure(['data', 'current_page', 'last_page']);
     }
 
     public function test_admin_and_user_cannot_view_audit_log(): void
