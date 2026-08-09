@@ -50,5 +50,11 @@
     "expense": "Expense",
     "Balance": "Balance",
     "Backup created successfully: :path": "Backup created successfully: :path",
-    "The backup could not be created.": "The backup could not be created."
+    "The backup could not be created.": "The backup could not be created.",
+    "The capacity is lower than the number of registrations.": "The capacity is lower than the number of registrations.",
+    "You are already registered.": "You are already registered.",
+    "The activity is full.": "The activity is full.",
+    "The Waqf asset must be active.": "The Waqf asset must be active.",
+    "Only a pending Waqf expense can be modified.": "Only a pending Waqf expense can be modified.",
+    "The transaction currency must match the Waqf asset currency.": "The transaction currency must match the Waqf asset currency."
 }

@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/waqf/revenues', [WaqfController::class, 'storeRevenue'])->middleware('permission:waqf.manage')->name('waqf.revenues.store');
         Route::post('/waqf/revenues/{revenue}/validate', [WaqfController::class, 'validateRevenue'])->middleware('permission:waqf.manage')->name('waqf.revenues.validate');
         Route::post('/waqf/expenses', [WaqfController::class, 'storeExpense'])->middleware('permission:waqf.manage')->name('waqf.expenses.store');
+        Route::patch('/waqf/expenses/{expense}', [WaqfController::class, 'updateExpense'])->middleware('permission:waqf.manage')->name('waqf.expenses.update');
         Route::post('/waqf/expenses/{expense}/validate', [WaqfController::class, 'validateExpense'])->middleware('permission:waqf.manage')->name('waqf.expenses.validate');
         Route::get('/activities', [ActivityController::class, 'index'])->middleware('permission:activities.view')->name('activities.index');
         Route::post('/activities', [ActivityController::class, 'store'])->middleware('permission:activities.manage')->name('activities.store');

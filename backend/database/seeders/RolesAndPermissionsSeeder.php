@@ -12,35 +12,13 @@ class RolesAndPermissionsSeeder extends Seeder
     public function run(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
-        $permissions = [
-            'platform.manage', 'admins.manage',
-            'mosques.view', 'mosques.create', 'mosques.update', 'mosques.delete',
-            'councils.view', 'councils.create', 'councils.update', 'councils.delete',
-            'council-members.view', 'council-members.create', 'council-members.update', 'council-members.delete',
-            'council-meetings.view', 'council-meetings.manage',
-            'users.view', 'users.create', 'users.update', 'users.delete',
-            'faithful.view', 'faithful.manage', 'contributions.view', 'contributions.manage',
-            'zakat.view', 'zakat.manage', 'waqf.view', 'waqf.manage',
-            'finances.view', 'finances.manage', 'activities.view', 'activities.manage',
-            'announcements.view', 'announcements.manage', 'reports.view', 'audit.view', 'profile.manage',
-        ];
-        foreach ($permissions as $permission) { Permission::findOrCreate($permission, 'web'); }
-        $superadmin = Role::findOrCreate('superadmin', 'web');
-        $admin = Role::findOrCreate('admin', 'web');
-        $user = Role::findOrCreate('user', 'web');
-        $superadmin->syncPermissions($permissions);
-        $admin->syncPermissions([
-            'mosques.view', 'mosques.create', 'mosques.update',
-            'councils.view', 'councils.create', 'councils.update', 'councils.delete',
-            'council-members.view', 'council-members.create', 'council-members.update', 'council-members.delete',
-            'council-meetings.view', 'council-meetings.manage',
-            'users.view', 'users.create', 'users.update', 'users.delete',
-            'faithful.view', 'faithful.manage', 'contributions.view', 'contributions.manage',
-            'zakat.view', 'zakat.manage', 'waqf.view', 'waqf.manage',
-            'finances.view', 'finances.manage', 'activities.view', 'activities.manage',
-            'announcements.view', 'announcements.manage', 'reports.view', 'profile.manage',
-        ]);
-        $user->syncPermissions(['mosques.view', 'councils.view', 'council-members.view', 'council-meetings.view', 'faithful.view', 'activities.view', 'announcements.view', 'profile.manage']);
+        $permissions = config('permissions.all');
+        foreach ($permissions as $permission) {
+            Permission::findOrCreate($permission, 'web');
+        }
+        foreach (config('permissions.roles') as $roleName => $rolePermissions) {
+            Role::findOrCreate($roleName, 'web')->syncPermissions($rolePermissions);
+        }
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

@@ -71,6 +71,30 @@ class RolesAndPermissionsTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
 
         $this->assertSame(3, Role::count());
-        $this->assertSame(27, Permission::count());
+        $this->assertSame($this->canonicalPermissions(), Permission::query()->orderBy('name')->pluck('name')->all());
+    }
+
+    public function test_seeder_creates_exactly_the_canonical_permissions(): void
+    {
+        $expected = $this->canonicalPermissions();
+
+        $this->assertCount(37, $expected);
+        $this->assertCount(count(array_unique($expected)), $expected);
+        $this->assertSame($expected, Permission::query()->orderBy('name')->pluck('name')->all());
+    }
+
+    public function test_each_role_receives_exactly_its_configured_permissions(): void
+    {
+        foreach (config('permissions.roles') as $roleName => $permissions) {
+            $actual = Role::findByName($roleName)->permissions->pluck('name')->sort()->values()->all();
+            $expected = collect($permissions)->sort()->values()->all();
+
+            $this->assertSame($expected, $actual, "Unexpected permissions for role {$roleName}");
+        }
+    }
+
+    private function canonicalPermissions(): array
+    {
+        return collect(config('permissions.all'))->sort()->values()->all();
     }
 }

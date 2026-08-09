@@ -75,15 +75,102 @@ class WaqfManagementTest extends TestCase
     {
         [$admin, $mosque] = $this->adminAndMosque();
         $asset = $this->asset($mosque, $admin);
-        WaqfRevenue::query()->create($this->revenueRecord($asset, $admin) + [
+        WaqfRevenue::query()->create(array_merge($this->revenueRecord($asset, $admin), [
             'currency' => 'USD',
             'status' => 'validated',
             'validated_by' => $admin->id,
             'validated_at' => now(),
-        ]);
+        ]));
         $expense = $this->actingAs($admin)->postJson(route('admin.waqf.expenses.store'), $this->expensePayload($asset))->assertCreated();
 
         $this->actingAs($admin)->postJson(route('admin.waqf.expenses.validate', $expense->json('id')))->assertUnprocessable();
+    }
+
+    public function test_expense_currency_must_match_asset_without_partial_write_or_audit(): void
+    {
+        [$admin, $mosque] = $this->adminAndMosque();
+        $asset = $this->asset($mosque, $admin);
+        $payload = $this->expensePayload($asset);
+        $payload['currency'] = 'USD';
+        $auditCount = AuditLog::query()->where('event', 'waqf.expense.created')->count();
+
+        $this->actingAs($admin)->postJson(route('admin.waqf.expenses.store'), $payload)
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'La devise de la transaction doit correspondre à celle du bien Waqf.');
+
+        $this->assertDatabaseCount('waqf_expenses', 0);
+        $this->assertSame($auditCount, AuditLog::query()->where('event', 'waqf.expense.created')->count());
+    }
+
+    public function test_pending_expense_can_be_updated_in_the_asset_currency(): void
+    {
+        [$admin, $mosque] = $this->adminAndMosque();
+        $asset = $this->asset($mosque, $admin);
+        $expense = $this->actingAs($admin)->postJson(route('admin.waqf.expenses.store'), $this->expensePayload($asset))->assertCreated();
+
+        $this->actingAs($admin)->patchJson(route('admin.waqf.expenses.update', $expense->json('id')), [
+            'amount' => 40000,
+            'currency' => 'GNF',
+            'purpose' => 'Entretien révisé',
+        ])->assertOk()->assertJsonPath('amount', '40000.00');
+
+        $this->assertDatabaseHas('waqf_expenses', ['id' => $expense->json('id'), 'currency' => 'GNF', 'purpose' => 'Entretien révisé']);
+    }
+
+    public function test_expense_update_rejects_another_currency_without_changes_or_audit(): void
+    {
+        [$admin, $mosque] = $this->adminAndMosque();
+        $asset = $this->asset($mosque, $admin);
+        $expense = $this->actingAs($admin)->postJson(route('admin.waqf.expenses.store'), $this->expensePayload($asset))->assertCreated();
+        $auditCount = AuditLog::query()->where('event', 'waqf.expense.updated')->count();
+
+        $this->actingAs($admin)->patchJson(route('admin.waqf.expenses.update', $expense->json('id')), [
+            'currency' => 'USD',
+            'purpose' => 'Modification refusée',
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseHas('waqf_expenses', [
+            'id' => $expense->json('id'),
+            'currency' => 'GNF',
+            'purpose' => 'Réparation de la toiture',
+        ]);
+        $this->assertSame($auditCount, AuditLog::query()->where('event', 'waqf.expense.updated')->count());
+    }
+
+    public function test_admin_cannot_update_another_mosques_waqf_expense(): void
+    {
+        [$admin] = $this->adminAndMosque('main');
+        [$otherAdmin, $otherMosque] = $this->adminAndMosque('other');
+        $asset = $this->asset($otherMosque, $otherAdmin);
+        $expense = WaqfExpense::query()->create($this->expensePayload($asset) + [
+            'reference_number' => 'WEX-OTHER',
+            'status' => 'pending',
+            'created_by' => $otherAdmin->id,
+        ]);
+
+        $this->actingAs($admin)->patchJson(route('admin.waqf.expenses.update', $expense), ['amount' => 10])
+            ->assertForbidden();
+    }
+
+    public function test_waqf_currency_error_is_localized_in_supported_languages(): void
+    {
+        $messages = [
+            'fr' => 'La devise de la transaction doit correspondre à celle du bien Waqf.',
+            'en' => 'The transaction currency must match the Waqf asset currency.',
+            'ar' => 'يجب أن تتطابق عملة المعاملة مع عملة أصل الوقف.',
+        ];
+
+        foreach ($messages as $locale => $message) {
+            [$admin, $mosque] = $this->adminAndMosque('locale-'.$locale);
+            $admin->update(['locale' => $locale]);
+            $asset = $this->asset($mosque, $admin);
+            $payload = $this->expensePayload($asset);
+            $payload['currency'] = 'USD';
+
+            $this->actingAs($admin)->postJson(route('admin.waqf.expenses.store'), $payload)
+                ->assertUnprocessable()
+                ->assertJsonPath('message', $message);
+        }
     }
 
     public function test_validated_revenue_can_fund_an_expense_only_once(): void

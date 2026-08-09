@@ -50,5 +50,11 @@
     "expense": "Dépenses",
     "Balance": "Solde",
     "Backup created successfully: :path": "Sauvegarde créée avec succès : :path",
-    "The backup could not be created.": "La sauvegarde n’a pas pu être créée."
+    "The backup could not be created.": "La sauvegarde n’a pas pu être créée.",
+    "The capacity is lower than the number of registrations.": "La capacité est inférieure au nombre d’inscrits.",
+    "You are already registered.": "Vous êtes déjà inscrit.",
+    "The activity is full.": "Cette activité est complète.",
+    "The Waqf asset must be active.": "Le bien Waqf doit être actif.",
+    "Only a pending Waqf expense can be modified.": "Seule une dépense Waqf en attente peut être modifiée.",
+    "The transaction currency must match the Waqf asset currency.": "La devise de la transaction doit correspondre à celle du bien Waqf."
 }
