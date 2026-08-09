@@ -73,6 +73,14 @@ class DonationController extends Controller
         $mosqueId = (int) ($data['mosque_id'] ?? $donation->mosque_id);
         $this->ensureMosqueManageable($request->user(), $mosqueId);
         $this->ensureFaithfulBelongsToMosque($data['faithful_id'] ?? $donation->faithful_id, $mosqueId);
+
+        if (($data['is_anonymous'] ?? $donation->is_anonymous) === true) {
+            $data['faithful_id'] = null;
+            $data['donor_name'] = null;
+            $data['donor_phone'] = null;
+            $data['donor_email'] = null;
+        }
+
         $donation->update($data);
 
         return response()->json($donation->fresh()->load('mosque:id,code,name'));
@@ -84,7 +92,9 @@ class DonationController extends Controller
         abort_if($donation->status !== 'pending', 422, 'Cette contribution a déjà été traitée.');
 
         DB::transaction(function () use ($request, $donation): void {
-            $donation->update([
+            $locked = Donation::query()->lockForUpdate()->findOrFail($donation->getKey());
+            abort_if($locked->status !== 'pending', 422, 'Cette contribution a déjà été traitée.');
+            $locked->update([
                 'status' => 'validated',
                 'validated_by' => $request->user()->getKey(),
                 'validated_at' => now(),
@@ -99,7 +109,16 @@ class DonationController extends Controller
         $this->ensureMosqueManageable($request->user(), $donation->mosque_id);
         abort_if($donation->status !== 'pending', 422, 'Cette contribution a déjà été traitée.');
         $validated = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
-        $donation->update(['status' => 'rejected', 'notes' => trim(($donation->notes ? $donation->notes."\n" : '').'Rejet: '.$validated['reason'])]);
+        DB::transaction(function () use ($request, $donation, $validated): void {
+            $locked = Donation::query()->lockForUpdate()->findOrFail($donation->getKey());
+            abort_if($locked->status !== 'pending', 422, 'Cette contribution a déjà été traitée.');
+            $locked->update([
+                'status' => 'rejected',
+                'validated_by' => $request->user()->getKey(),
+                'validated_at' => now(),
+                'notes' => trim(($locked->notes ? $locked->notes."\n" : '').'Rejet: '.$validated['reason']),
+            ]);
+        });
 
         return response()->json($donation->fresh());
     }
