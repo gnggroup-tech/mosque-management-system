@@ -22,4 +22,6 @@ class Mosque extends Model
     public function zakatBeneficiaries(): HasMany { return $this->hasMany(ZakatBeneficiary::class); }
     public function zakatDistributions(): HasMany { return $this->hasMany(ZakatDistribution::class); }
     public function waqfAssets(): HasMany { return $this->hasMany(WaqfAsset::class); }
+    public function subsidies(): HasMany { return $this->hasMany(Subsidy::class); }
+    public function expenses(): HasMany { return $this->hasMany(Expense::class); }
 }
