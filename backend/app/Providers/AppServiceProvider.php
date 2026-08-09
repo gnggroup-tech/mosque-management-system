@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Activity;
 use App\Models\CouncilMember;
 use App\Models\Donation;
 use App\Models\Expense;
@@ -16,6 +17,7 @@ use App\Models\ZakatDistribution;
 use App\Models\WaqfAsset;
 use App\Models\WaqfExpense;
 use App\Models\WaqfRevenue;
+use App\Observers\ActivityObserver;
 use App\Observers\CouncilMemberObserver;
 use App\Observers\DonationObserver;
 use App\Observers\FinanceObserver;
@@ -32,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void {}
     public function boot(): void
     {
+        Activity::observe(ActivityObserver::class);
         CouncilMember::observe(CouncilMemberObserver::class);
         Donation::observe(DonationObserver::class);
         Expense::observe(FinanceObserver::class);
