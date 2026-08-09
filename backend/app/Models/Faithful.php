@@ -18,6 +18,8 @@ class Faithful extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'faithful';
+
     protected function casts(): array
     {
         return ['birth_date' => 'date', 'joined_at' => 'date', 'consent_at' => 'datetime'];
