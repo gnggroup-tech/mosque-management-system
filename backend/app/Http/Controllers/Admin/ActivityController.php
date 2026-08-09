@@ -48,6 +48,7 @@ class ActivityController extends Controller
     public function show(Request $request, Activity $activity): JsonResponse
     {
         abort_unless($this->visibleTo($request->user())->whereKey($activity)->exists(), 403);
+
         return response()->json($activity->load(['mosque:id,code,name', 'registrations.user:id,name,email']));
     }
 
@@ -59,9 +60,10 @@ class ActivityController extends Controller
         $mosqueId = (int) ($data['mosque_id'] ?? $activity->mosque_id);
         $this->ensureMosqueManageable($request->user(), $mosqueId);
         if (array_key_exists('capacity', $data) && $data['capacity'] !== null) {
-            abort_if($activity->registrations()->count() > $data['capacity'], 422, 'La capacité est inférieure au nombre d’inscrits.');
+            abort_if($activity->registrations()->count() > $data['capacity'], 422, __('The capacity is lower than the number of registrations.'));
         }
         $activity->update($data);
+
         return response()->json($activity->fresh()->load('mosque:id,code,name'));
     }
 
@@ -70,6 +72,7 @@ class ActivityController extends Controller
         $this->ensureMosqueManageable($request->user(), $activity->mosque_id);
         abort_unless($activity->status === 'draft', 422, 'Seule une activité en brouillon peut être publiée.');
         $activity->update(['status' => 'published', 'published_at' => now()]);
+
         return response()->json($activity->fresh());
     }
 
@@ -78,6 +81,7 @@ class ActivityController extends Controller
         $this->ensureMosqueManageable($request->user(), $activity->mosque_id);
         abort_unless(in_array($activity->status, ['draft', 'published'], true), 422);
         $activity->update(['status' => 'cancelled']);
+
         return response()->json($activity->fresh());
     }
 
@@ -86,10 +90,12 @@ class ActivityController extends Controller
         abort_unless($activity->status === 'published' && $activity->registration_required && $activity->starts_at->isFuture(), 422);
         $registration = DB::transaction(function () use ($request, $activity): ActivityRegistration {
             $locked = Activity::query()->lockForUpdate()->findOrFail($activity->id);
-            abort_if($locked->registrations()->where('user_id', $request->user()->id)->exists(), 422, 'Vous êtes déjà inscrit.');
-            abort_if($locked->capacity !== null && $locked->registrations()->count() >= $locked->capacity, 422, 'Cette activité est complète.');
+            abort_if($locked->registrations()->where('user_id', $request->user()->id)->exists(), 422, __('You are already registered.'));
+            abort_if($locked->capacity !== null && $locked->registrations()->count() >= $locked->capacity, 422, __('The activity is full.'));
+
             return $locked->registrations()->create(['user_id' => $request->user()->id, 'registered_at' => now()]);
         });
+
         return response()->json($registration, 201);
     }
 
@@ -98,6 +104,7 @@ class ActivityController extends Controller
         abort_if($activity->starts_at->isPast(), 422);
         $deleted = $activity->registrations()->where('user_id', $request->user()->id)->delete();
         abort_if($deleted === 0, 404);
+
         return response()->json(status: 204);
     }
 
@@ -106,6 +113,7 @@ class ActivityController extends Controller
         $this->ensureMosqueManageable($request->user(), $activity->mosque_id);
         abort_if($activity->status === 'completed', 422);
         $activity->delete();
+
         return response()->json(status: 204);
     }
 

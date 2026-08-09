@@ -50,5 +50,11 @@
     "expense": "المصروفات",
     "Balance": "الرصيد",
     "Backup created successfully: :path": "تم إنشاء النسخة الاحتياطية بنجاح: :path",
-    "The backup could not be created.": "تعذر إنشاء النسخة الاحتياطية."
+    "The backup could not be created.": "تعذر إنشاء النسخة الاحتياطية.",
+    "The capacity is lower than the number of registrations.": "السعة أقل من عدد المسجلين.",
+    "You are already registered.": "أنت مسجل بالفعل.",
+    "The activity is full.": "اكتمل عدد المسجلين في النشاط.",
+    "The Waqf asset must be active.": "يجب أن يكون أصل الوقف نشطًا.",
+    "Only a pending Waqf expense can be modified.": "لا يمكن تعديل سوى مصروف وقف قيد الانتظار.",
+    "The transaction currency must match the Waqf asset currency.": "يجب أن تتطابق عملة المعاملة مع عملة أصل الوقف."
 }

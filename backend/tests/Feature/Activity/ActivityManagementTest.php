@@ -23,6 +23,7 @@ class ActivityManagementTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole($role);
+
         return $user;
     }
 
@@ -34,6 +35,17 @@ class ActivityManagementTest extends TestCase
     private function payload(Mosque $mosque): array
     {
         return ['mosque_id' => $mosque->id, 'title' => 'Cours de Coran', 'type' => 'course', 'starts_at' => now()->addDays(2)->toDateTimeString(), 'ends_at' => now()->addDays(2)->addHours(2)->toDateTimeString(), 'capacity' => 2, 'registration_required' => true];
+    }
+
+    private function publishedActivity(User $admin, int $capacity = 1, ?Mosque $mosque = null): Activity
+    {
+        $data = $this->payload($mosque ?? $this->mosque($admin));
+        $data['capacity'] = $capacity;
+        $data['created_by'] = $admin->id;
+        $data['status'] = 'published';
+        $data['published_at'] = now();
+
+        return Activity::query()->create($data);
     }
 
     public function test_admin_creates_activity_only_for_assigned_mosque(): void
@@ -68,14 +80,84 @@ class ActivityManagementTest extends TestCase
         $this->actingAs($admin)->postJson(route('admin.activities.publish', $activity->fresh()))->assertUnprocessable();
     }
 
+    public function test_registration_is_accepted_when_one_place_remains(): void
+    {
+        $admin = $this->user('admin');
+        $activity = $this->publishedActivity($admin, 1);
+        $user = $this->user('user');
+
+        $this->actingAs($user)->postJson(route('admin.activities.register', $activity))->assertCreated();
+        $this->assertDatabaseCount('activity_registrations', 1);
+    }
+
+    public function test_duplicate_registration_is_rejected(): void
+    {
+        $admin = $this->user('admin');
+        $activity = $this->publishedActivity($admin, 2);
+        $user = $this->user('user');
+
+        $this->actingAs($user)->postJson(route('admin.activities.register', $activity))->assertCreated();
+        $this->actingAs($user)->postJson(route('admin.activities.register', $activity))->assertUnprocessable();
+        $this->assertDatabaseCount('activity_registrations', 1);
+    }
+
     public function test_registration_prevents_duplicates_and_capacity_overflow(): void
     {
         $admin = $this->user('admin');
-        $activity = Activity::query()->create($this->payload($this->mosque($admin)) + ['created_by' => $admin->id, 'status' => 'published', 'published_at' => now(), 'capacity' => 1]);
-        $user = $this->user('user');
-        $this->actingAs($user)->postJson(route('admin.activities.register', $activity))->assertCreated();
-        $this->actingAs($user)->postJson(route('admin.activities.register', $activity))->assertUnprocessable();
-        $this->actingAs($this->user('user'))->postJson(route('admin.activities.register', $activity))->assertUnprocessable();
+        $activity = $this->publishedActivity($admin, 1);
+
+        $this->actingAs($this->user('user'))->postJson(route('admin.activities.register', $activity))->assertCreated();
+        $this->actingAs($this->user('user'))->postJson(route('admin.activities.register', $activity))
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Cette activité est complète.');
+        $this->assertDatabaseCount('activity_registrations', 1);
+    }
+
+    public function test_unregistration_removes_the_registration_and_frees_capacity(): void
+    {
+        $admin = $this->user('admin');
+        $activity = $this->publishedActivity($admin, 1);
+        $first = $this->user('user');
+
+        $this->actingAs($first)->postJson(route('admin.activities.register', $activity))->assertCreated();
+        $this->actingAs($first)->deleteJson(route('admin.activities.unregister', $activity))->assertNoContent();
+        $this->actingAs($this->user('user'))->postJson(route('admin.activities.register', $activity))->assertCreated();
+        $this->assertDatabaseCount('activity_registrations', 1);
+    }
+
+    public function test_activity_capacity_is_isolated_between_mosques(): void
+    {
+        $firstAdmin = $this->user('admin');
+        $secondAdmin = $this->user('admin');
+        $fullActivity = $this->publishedActivity($firstAdmin, 1);
+        $availableActivity = $this->publishedActivity($secondAdmin, 1);
+
+        $this->actingAs($this->user('user'))->postJson(route('admin.activities.register', $fullActivity))->assertCreated();
+        $this->actingAs($this->user('user'))->postJson(route('admin.activities.register', $availableActivity))->assertCreated();
+
+        $this->assertSame(1, $fullActivity->registrations()->count());
+        $this->assertSame(1, $availableActivity->registrations()->count());
+    }
+
+    public function test_full_activity_message_is_localized_in_supported_languages(): void
+    {
+        $messages = [
+            'fr' => 'Cette activité est complète.',
+            'en' => 'The activity is full.',
+            'ar' => 'اكتمل عدد المسجلين في النشاط.',
+        ];
+
+        foreach ($messages as $locale => $message) {
+            $admin = $this->user('admin');
+            $activity = $this->publishedActivity($admin, 1);
+            $this->actingAs($this->user('user'))->postJson(route('admin.activities.register', $activity))->assertCreated();
+            $requester = $this->user('user');
+            $requester->update(['locale' => $locale]);
+
+            $this->actingAs($requester)->postJson(route('admin.activities.register', $activity))
+                ->assertUnprocessable()
+                ->assertJsonPath('message', $message);
+        }
     }
 
     public function test_admin_cannot_view_other_mosque_activity(): void

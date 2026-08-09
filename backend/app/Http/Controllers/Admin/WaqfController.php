@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Waqf\StoreWaqfAssetRequest;
 use App\Http\Requests\Waqf\StoreWaqfTransactionRequest;
+use App\Http\Requests\Waqf\UpdateWaqfExpenseRequest;
 use App\Models\Mosque;
 use App\Models\User;
 use App\Models\WaqfAsset;
@@ -48,8 +49,9 @@ class WaqfController extends Controller
     {
         $data = $request->validated();
         $asset = $this->manageableAsset($request->user(), (int) $data['waqf_asset_id']);
-        abort_if($asset->status !== 'active', 422, 'Le bien Waqf doit être actif.');
-        $data += ['currency' => 'GNF'];
+        abort_if($asset->status !== 'active', 422, __('The Waqf asset must be active.'));
+        $data += ['currency' => $asset->currency];
+        $this->ensureTransactionCurrencyMatchesAsset($asset, $data['currency']);
         $data['receipt_number'] = $this->uniqueNumber('WRV', WaqfRevenue::class, 'receipt_number');
         $data['status'] = 'pending';
         $data['created_by'] = $request->user()->id;
@@ -61,13 +63,31 @@ class WaqfController extends Controller
     {
         $data = $request->validated();
         $asset = $this->manageableAsset($request->user(), (int) $data['waqf_asset_id']);
-        abort_if($asset->status !== 'active', 422, 'Le bien Waqf doit être actif.');
-        $data += ['currency' => 'GNF'];
+        abort_if($asset->status !== 'active', 422, __('The Waqf asset must be active.'));
+        $data += ['currency' => $asset->currency];
+        $this->ensureTransactionCurrencyMatchesAsset($asset, $data['currency']);
         $data['reference_number'] = $this->uniqueNumber('WEX', WaqfExpense::class, 'reference_number');
         $data['status'] = 'pending';
         $data['created_by'] = $request->user()->id;
 
         return response()->json(WaqfExpense::query()->create($data), 201);
+    }
+
+    public function updateExpense(UpdateWaqfExpenseRequest $request, WaqfExpense $expense): JsonResponse
+    {
+        $data = $request->validated();
+        $expense = DB::transaction(function () use ($request, $expense, $data): WaqfExpense {
+            $locked = WaqfExpense::query()->lockForUpdate()->findOrFail($expense->id);
+            $asset = $this->manageableAsset($request->user(), $locked->waqf_asset_id);
+            abort_if($locked->status !== 'pending', 422, __('Only a pending Waqf expense can be modified.'));
+            abort_if($asset->status !== 'active', 422, __('The Waqf asset must be active.'));
+            $this->ensureTransactionCurrencyMatchesAsset($asset, $data['currency'] ?? $locked->currency);
+            $locked->update($data);
+
+            return $locked->fresh();
+        });
+
+        return response()->json($expense);
     }
 
     public function validateRevenue(Request $request, WaqfRevenue $revenue): JsonResponse
@@ -112,12 +132,21 @@ class WaqfController extends Controller
     {
         $asset = WaqfAsset::query()->with('mosque')->findOrFail($assetId);
         abort_unless($user->hasRole('superadmin') || $asset->mosque->admin_id === $user->id, 403);
+
         return $asset;
+    }
+
+    private function ensureTransactionCurrencyMatchesAsset(WaqfAsset $asset, string $currency): void
+    {
+        abort_if($currency !== $asset->currency, 422, __('The transaction currency must match the Waqf asset currency.'));
     }
 
     private function uniqueNumber(string $prefix, string $model, string $column): string
     {
-        do { $number = $prefix.'-'.now()->format('Ymd').'-'.Str::upper(Str::random(8)); } while ($model::query()->where($column, $number)->exists());
+        do {
+            $number = $prefix.'-'.now()->format('Ymd').'-'.Str::upper(Str::random(8));
+        } while ($model::query()->where($column, $number)->exists());
+
         return $number;
     }
 }
