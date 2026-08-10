@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AccountStatus;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -17,6 +18,40 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable;
+
+    protected $attributes = [
+        'status' => AccountStatus::Active->value,
+    ];
+
+    public function isPendingEmail(): bool
+    {
+        return $this->status === AccountStatus::PendingEmail;
+    }
+
+    public function isPendingApproval(): bool
+    {
+        return $this->status === AccountStatus::PendingApproval;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === AccountStatus::Active;
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->status === AccountStatus::Suspended;
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->status === AccountStatus::Archived;
+    }
+
+    public function canAuthenticate(): bool
+    {
+        return $this->isActive();
+    }
 
     public function administeredMosques(): HasMany
     {
@@ -90,6 +125,15 @@ class User extends Authenticatable
 
     protected function casts(): array
     {
-        return ['email_verified_at' => 'datetime', 'password' => 'hashed'];
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'status' => AccountStatus::class,
+            'activated_at' => 'datetime',
+            'suspended_at' => 'datetime',
+            'archived_at' => 'datetime',
+            'verification_required_at' => 'datetime',
+            'verification_exempt_until' => 'datetime',
+        ];
     }
 }
