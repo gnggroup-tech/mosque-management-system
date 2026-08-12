@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AccountApprovalController;
 use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\AuditLogController;
@@ -28,6 +29,9 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->middleware('permission:audit.view')->name('admin.audit-logs.index');
 
     Route::prefix('admin')->name('admin.')->group(function (): void {
+        Route::patch('/accounts/{account}/approve', AccountApprovalController::class)
+            ->middleware('permission:users.approve')
+            ->name('accounts.approve');
         Route::get('/mosques', [MosqueController::class, 'index'])->middleware('permission:mosques.view')->name('mosques.index');
         Route::post('/mosques', [MosqueController::class, 'store'])->middleware('permission:mosques.create')->name('mosques.store');
         Route::get('/mosques/{mosque}', [MosqueController::class, 'show'])->middleware('permission:mosques.view')->name('mosques.show');
