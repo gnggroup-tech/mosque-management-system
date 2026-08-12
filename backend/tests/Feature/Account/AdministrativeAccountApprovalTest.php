@@ -42,12 +42,13 @@ class AdministrativeAccountApprovalTest extends TestCase
 
     public function test_permission_is_seeded_only_for_superadmin_and_remains_idempotent(): void
     {
+        $task027Permissions = ['users.suspend', 'users.reactivate', 'users.archive'];
         $existingPermissions = collect(config('permissions.all'))
-            ->reject(fn (string $permission): bool => $permission === 'users.approve')
+            ->reject(fn (string $permission): bool => in_array($permission, $task027Permissions, true))
             ->values()
             ->all();
 
-        $this->assertCount(37, $existingPermissions);
+        $this->assertCount(38, $existingPermissions);
         $this->assertTrue(Permission::findByName('users.approve')->exists);
         $this->assertTrue(Role::findByName('superadmin')->hasPermissionTo('users.approve'));
         $this->assertFalse(Role::findByName('admin')->hasPermissionTo('users.approve'));
@@ -55,7 +56,7 @@ class AdministrativeAccountApprovalTest extends TestCase
 
         $this->seed(RolesAndPermissionsSeeder::class);
 
-        $this->assertSame(38, Permission::query()->count());
+        $this->assertSame(41, Permission::query()->count());
         $this->assertSame(1, Permission::query()->where('name', 'users.approve')->count());
         $this->assertTrue(Role::findByName('superadmin')->hasPermissionTo('users.approve'));
         $this->assertFalse(Role::findByName('admin')->hasPermissionTo('users.approve'));
