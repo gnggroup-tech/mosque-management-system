@@ -6,7 +6,7 @@ $all = [
     'councils.view', 'councils.create', 'councils.update', 'councils.delete',
     'council-members.view', 'council-members.create', 'council-members.update', 'council-members.delete',
     'council-meetings.view', 'council-meetings.manage',
-    'users.view', 'users.create', 'users.update', 'users.delete',
+    'users.view', 'users.create', 'users.update', 'users.delete', 'users.approve',
     'faithful.view', 'faithful.manage', 'contributions.view', 'contributions.manage',
     'zakat.view', 'zakat.manage', 'waqf.view', 'waqf.manage',
     'finances.view', 'finances.manage', 'activities.view', 'activities.manage',
