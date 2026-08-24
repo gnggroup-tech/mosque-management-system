@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Mosque;
 
+use App\Enums\MosqueMembershipType;
 use App\Models\AuditLog;
 use App\Models\Mosque;
+use App\Models\MosqueMembership;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -49,8 +51,8 @@ class MosqueManagementTest extends TestCase
         $admin->assignRole('admin');
         $other = User::factory()->create();
         $other->assignRole('admin');
-        Mosque::query()->create($this->mosqueData('MOS-001', $admin->id));
-        Mosque::query()->create($this->mosqueData('MOS-002', $other->id));
+        $this->mosque('MOS-001', $admin);
+        $this->mosque('MOS-002', $other);
 
         $this->actingAs($admin)->getJson(route('admin.mosques.index'))
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.code', 'MOS-001');
@@ -62,13 +64,13 @@ class MosqueManagementTest extends TestCase
         $admin->assignRole('admin');
         $other = User::factory()->create();
         $other->assignRole('admin');
-        $mosque = Mosque::query()->create($this->mosqueData('MOS-003', $other->id));
+        $mosque = $this->mosque('MOS-003', $other);
 
         $this->actingAs($admin)->getJson(route('admin.mosques.show', $mosque))->assertForbidden();
         $this->actingAs($admin)->patchJson(route('admin.mosques.update', $mosque), ['name' => 'Interdit'])->assertForbidden();
     }
 
-    public function test_admin_created_mosque_is_automatically_assigned_to_that_admin(): void
+    public function test_admin_cannot_create_or_self_assign_a_mosque(): void
     {
         $admin = User::factory()->create();
         $admin->assignRole('admin');
@@ -76,14 +78,9 @@ class MosqueManagementTest extends TestCase
         $this->actingAs($admin)->postJson(route('admin.mosques.store'), [
             'code' => 'MOS-004', 'name' => 'Mosquée locale',
             'region' => 'Kindia', 'prefecture' => 'Kindia', 'commune' => 'Kindia',
-        ])->assertCreated()->assertJsonPath('admin_id', $admin->id);
+        ])->assertForbidden();
 
-        $this->assertDatabaseHas('mosque_user', [
-            'mosque_id' => Mosque::query()->where('code', 'MOS-004')->value('id'),
-            'user_id' => $admin->id,
-            'membership_type' => 'administrator',
-            'assigned_by' => $admin->id,
-        ]);
+        $this->assertDatabaseMissing('mosques', ['code' => 'MOS-004']);
     }
 
     public function test_explicit_primary_change_adds_canonical_membership_and_rejects_null_replacement(): void
@@ -94,7 +91,7 @@ class MosqueManagementTest extends TestCase
         $first->assignRole('admin');
         $replacement = User::factory()->create();
         $replacement->assignRole('admin');
-        $mosque = Mosque::query()->create($this->mosqueData('MOS-PRIMARY-031', $first->id));
+        $mosque = $this->mosque('MOS-PRIMARY-031', $first);
 
         $this->actingAs($superadmin)->patchJson(route('admin.mosques.update', $mosque), [
             'admin_id' => $replacement->id,
@@ -126,7 +123,7 @@ class MosqueManagementTest extends TestCase
         $admin->assignRole('admin');
         $superadmin = User::factory()->create();
         $superadmin->assignRole('superadmin');
-        $mosque = Mosque::query()->create($this->mosqueData('MOS-005', $admin->id));
+        $mosque = $this->mosque('MOS-005', $admin);
 
         $this->actingAs($admin)->deleteJson(route('admin.mosques.destroy', $mosque))->assertForbidden();
         $this->actingAs($superadmin)->deleteJson(route('admin.mosques.destroy', $mosque))->assertNoContent();
@@ -155,5 +152,17 @@ class MosqueManagementTest extends TestCase
     {
         return ['code' => $code, 'name' => 'Mosquée '.$code, 'region' => 'Conakry',
             'prefecture' => 'Conakry', 'commune' => 'Ratoma', 'status' => 'active', 'admin_id' => $adminId];
+    }
+
+    private function mosque(string $code, User $administrator): Mosque
+    {
+        $mosque = Mosque::query()->create($this->mosqueData($code, $administrator->id));
+        MosqueMembership::query()->create([
+            'mosque_id' => $mosque->id,
+            'user_id' => $administrator->id,
+            'membership_type' => MosqueMembershipType::Administrator,
+        ]);
+
+        return $mosque;
     }
 }
