@@ -119,14 +119,24 @@ class ActivityController extends Controller
 
     private function visibleTo(User $user): Builder
     {
-        return Activity::query()
-            ->when($user->hasRole('admin'), fn (Builder $q) => $q->whereHas('mosque', fn (Builder $m) => $m->where('admin_id', $user->id)))
-            ->when($user->hasRole('user'), fn (Builder $q) => $q->where('status', 'published'));
+        if ($user->hasRole('superadmin')) {
+            return Activity::query();
+        }
+
+        if ($user->hasRole('admin')) {
+            return Activity::query()->whereHas('mosque', fn (Builder $mosques) => $mosques->administrableBy($user));
+        }
+
+        if ($user->hasRole('user')) {
+            return Activity::query()->where('status', 'published');
+        }
+
+        return Activity::query()->whereRaw('1 = 0');
     }
 
     private function ensureMosqueManageable(User $user, int $mosqueId): void
     {
         $mosque = Mosque::query()->findOrFail($mosqueId);
-        abort_unless($user->hasRole('superadmin') || $mosque->admin_id === $user->id, 403);
+        abort_unless($user->hasRole('superadmin') || $user->canAdministerMosque($mosque), 403);
     }
 }

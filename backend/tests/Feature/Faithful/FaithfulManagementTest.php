@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Faithful;
 
+use App\Enums\MosqueMembershipType;
 use App\Models\Faithful;
 use App\Models\Mosque;
+use App\Models\MosqueMembership;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -100,7 +102,13 @@ class FaithfulManagementTest extends TestCase
         static $n = 0;
         $n++;
 
-        return Mosque::query()->create(['code' => 'MOS-F'.str_pad((string) $n, 3, '0', STR_PAD_LEFT), 'name' => 'Mosquée '.$n, 'region' => 'Conakry', 'prefecture' => 'Conakry', 'commune' => 'Ratoma', 'status' => 'active', 'admin_id' => $admin?->id]);
+        $mosque = Mosque::query()->create(['code' => 'MOS-F'.str_pad((string) $n, 3, '0', STR_PAD_LEFT), 'name' => 'Mosquée '.$n, 'region' => 'Conakry', 'prefecture' => 'Conakry', 'commune' => 'Ratoma', 'status' => 'active', 'admin_id' => $admin?->id]);
+
+        if ($admin !== null) {
+            MosqueMembership::query()->create(['mosque_id' => $mosque->id, 'user_id' => $admin->id, 'membership_type' => MosqueMembershipType::Administrator]);
+        }
+
+        return $mosque;
     }
 
     private function payload(Mosque $mosque): array

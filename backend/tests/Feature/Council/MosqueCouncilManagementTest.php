@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Council;
 
+use App\Enums\MosqueMembershipType;
 use App\Models\Mosque;
 use App\Models\MosqueCouncil;
+use App\Models\MosqueMembership;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -156,7 +158,7 @@ class MosqueCouncilManagementTest extends TestCase
         static $sequence = 0;
         $sequence++;
 
-        return Mosque::query()->create([
+        $mosque = Mosque::query()->create([
             'code' => 'MOS-C'.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT),
             'name' => 'Mosquée Conseil '.$sequence,
             'region' => 'Conakry',
@@ -165,6 +167,12 @@ class MosqueCouncilManagementTest extends TestCase
             'status' => 'active',
             'admin_id' => $admin?->id,
         ]);
+
+        if ($admin !== null) {
+            MosqueMembership::query()->create(['mosque_id' => $mosque->id, 'user_id' => $admin->id, 'membership_type' => MosqueMembershipType::Administrator]);
+        }
+
+        return $mosque;
     }
 
     private function councilFor(Mosque $mosque, string $status): MosqueCouncil

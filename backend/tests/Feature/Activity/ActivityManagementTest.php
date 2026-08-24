@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Activity;
 
+use App\Enums\MosqueMembershipType;
 use App\Models\Activity;
 use App\Models\Mosque;
+use App\Models\MosqueMembership;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,7 +31,10 @@ class ActivityManagementTest extends TestCase
 
     private function mosque(User $admin): Mosque
     {
-        return Mosque::query()->create(['code' => fake()->unique()->bothify('MSQ-####'), 'name' => fake()->company(), 'address' => 'Conakry', 'region' => 'Conakry', 'prefecture' => 'Conakry', 'commune' => 'Ratoma', 'status' => 'active', 'admin_id' => $admin->id]);
+        $mosque = Mosque::query()->create(['code' => fake()->unique()->bothify('MSQ-####'), 'name' => fake()->company(), 'address' => 'Conakry', 'region' => 'Conakry', 'prefecture' => 'Conakry', 'commune' => 'Ratoma', 'status' => 'active', 'admin_id' => $admin->id]);
+        MosqueMembership::query()->create(['mosque_id' => $mosque->id, 'user_id' => $admin->id, 'membership_type' => MosqueMembershipType::Administrator]);
+
+        return $mosque;
     }
 
     private function payload(Mosque $mosque): array
