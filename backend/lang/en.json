@@ -154,5 +154,22 @@
     "Your invitation was accepted. An administrator must approve your account before you can sign in.": "Your invitation was accepted. An administrator must approve your account before you can sign in.",
     "Password": "Password",
     "Confirm Password": "Confirm Password",
-    "Processing…": "Processing…"
+    "Manage role and mosques": "Manage role and mosques",
+    "Back to account": "Back to account",
+    "Provision :name without changing identity or account status.": "Provision :name without changing identity or account status.",
+    "The provisioning request could not be applied.": "The provisioning request could not be applied.",
+    "The provisioning request is invalid or the account changed. Refresh and try again.": "The provisioning request is invalid or the account changed. Refresh and try again.",
+    "The account role and mosque memberships were updated.": "The account role and mosque memberships were updated.",
+    "Application role": "Application role",
+    "A local administrator also requires at least one administrator membership.": "A local administrator also requires at least one administrator membership.",
+    "Canonical mosque memberships": "Canonical mosque memberships",
+    "Religious council functions are managed separately and will not change.": "Religious council functions are managed separately and will not change.",
+    "Member": "Member",
+    "Local administrator": "Local administrator",
+    "Set as historical primary administrator": "Set as historical primary administrator",
+    "Replacement if removed": "Replacement if removed",
+    "Select an active replacement": "Select an active replacement",
+    "No active mosque is available.": "No active mosque is available.",
+    "Save provisioning": "Save provisioning",
+    "This may demote the account or remove mosque access. Confirm this privileged change?": "This may demote the account or remove mosque access. Confirm this privileged change?"
 }

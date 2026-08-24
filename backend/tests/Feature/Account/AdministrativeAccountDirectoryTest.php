@@ -28,11 +28,11 @@ class AdministrativeAccountDirectoryTest extends TestCase
     public function test_directory_permission_is_superadmin_only_and_seeding_is_idempotent(): void
     {
         $historical = collect(config('permissions.all'))->reject(
-            fn (string $permission): bool => in_array($permission, ['users.directory.view', 'users.invite'], true),
+            fn (string $permission): bool => in_array($permission, ['users.directory.view', 'users.invite', 'users.roles.manage', 'users.mosques.manage'], true),
         );
 
         $this->assertCount(41, $historical);
-        $this->assertSame(43, Permission::query()->count());
+        $this->assertSame(45, Permission::query()->count());
         $this->assertTrue(Role::findByName('superadmin')->hasPermissionTo('users.directory.view'));
         $this->assertFalse(Role::findByName('admin')->hasPermissionTo('users.directory.view'));
         $this->assertFalse(Role::findByName('user')->hasPermissionTo('users.directory.view'));
@@ -40,7 +40,7 @@ class AdministrativeAccountDirectoryTest extends TestCase
 
         $this->seed(RolesAndPermissionsSeeder::class);
 
-        $this->assertSame(43, Permission::query()->count());
+        $this->assertSame(45, Permission::query()->count());
         $this->assertSame(1, Permission::query()->where('name', 'users.directory.view')->count());
     }
 

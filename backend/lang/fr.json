@@ -154,5 +154,22 @@
     "Your invitation was accepted. An administrator must approve your account before you can sign in.": "Votre invitation a été acceptée. Un administrateur doit approuver votre compte avant votre connexion.",
     "Password": "Mot de passe",
     "Confirm Password": "Confirmer le mot de passe",
-    "Processing…": "Traitement…"
+    "Manage role and mosques": "Gérer le rôle et les mosquées",
+    "Back to account": "Retour au compte",
+    "Provision :name without changing identity or account status.": "Provisionner :name sans modifier son identité ni son statut.",
+    "The provisioning request could not be applied.": "La demande de provisionnement n’a pas pu être appliquée.",
+    "The provisioning request is invalid or the account changed. Refresh and try again.": "La demande est invalide ou le compte a changé. Actualisez puis réessayez.",
+    "The account role and mosque memberships were updated.": "Le rôle et les rattachements du compte ont été mis à jour.",
+    "Application role": "Rôle applicatif",
+    "A local administrator also requires at least one administrator membership.": "Un administrateur local doit aussi avoir au moins un rattachement administrateur.",
+    "Canonical mosque memberships": "Rattachements canoniques aux mosquées",
+    "Religious council functions are managed separately and will not change.": "Les fonctions religieuses du conseil sont gérées séparément et ne seront pas modifiées.",
+    "Member": "Membre",
+    "Local administrator": "Administrateur local",
+    "Set as historical primary administrator": "Définir comme administrateur principal historique",
+    "Replacement if removed": "Remplaçant en cas de retrait",
+    "Select an active replacement": "Sélectionner un remplaçant actif",
+    "No active mosque is available.": "Aucune mosquée active n’est disponible.",
+    "Save provisioning": "Enregistrer le provisionnement",
+    "This may demote the account or remove mosque access. Confirm this privileged change?": "Cette action peut rétrograder le compte ou retirer son accès à une mosquée. Confirmez cette modification privilégiée."
 }

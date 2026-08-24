@@ -43,14 +43,14 @@ class SecureUserInvitationTest extends TestCase
 
     public function test_invitation_permission_is_superadmin_only_and_seeded_idempotently(): void
     {
-        $this->assertSame(43, Permission::query()->count());
+        $this->assertSame(45, Permission::query()->count());
         $this->assertTrue(Role::findByName('superadmin')->hasPermissionTo('users.invite'));
         $this->assertFalse(Role::findByName('admin')->hasPermissionTo('users.invite'));
         $this->assertFalse(Role::findByName('user')->hasPermissionTo('users.invite'));
 
         $this->seed(RolesAndPermissionsSeeder::class);
 
-        $this->assertSame(43, Permission::query()->count());
+        $this->assertSame(45, Permission::query()->count());
         $this->assertSame(1, Permission::query()->where('name', 'users.invite')->count());
     }
 

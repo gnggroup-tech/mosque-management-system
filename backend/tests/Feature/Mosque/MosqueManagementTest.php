@@ -34,6 +34,12 @@ class MosqueManagementTest extends TestCase
         ])->assertCreated()->assertJsonPath('admin_id', $admin->id);
 
         $this->assertDatabaseHas('mosques', ['code' => 'CKY-KAL-001', 'admin_id' => $admin->id]);
+        $this->assertDatabaseHas('mosque_user', [
+            'mosque_id' => Mosque::query()->where('code', 'CKY-KAL-001')->value('id'),
+            'user_id' => $admin->id,
+            'membership_type' => 'administrator',
+            'assigned_by' => $superadmin->id,
+        ]);
         $this->assertDatabaseHas('audit_logs', ['event' => 'mosque.created']);
     }
 
@@ -71,6 +77,38 @@ class MosqueManagementTest extends TestCase
             'code' => 'MOS-004', 'name' => 'Mosquée locale',
             'region' => 'Kindia', 'prefecture' => 'Kindia', 'commune' => 'Kindia',
         ])->assertCreated()->assertJsonPath('admin_id', $admin->id);
+
+        $this->assertDatabaseHas('mosque_user', [
+            'mosque_id' => Mosque::query()->where('code', 'MOS-004')->value('id'),
+            'user_id' => $admin->id,
+            'membership_type' => 'administrator',
+            'assigned_by' => $admin->id,
+        ]);
+    }
+
+    public function test_explicit_primary_change_adds_canonical_membership_and_rejects_null_replacement(): void
+    {
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole('superadmin');
+        $first = User::factory()->create();
+        $first->assignRole('admin');
+        $replacement = User::factory()->create();
+        $replacement->assignRole('admin');
+        $mosque = Mosque::query()->create($this->mosqueData('MOS-PRIMARY-031', $first->id));
+
+        $this->actingAs($superadmin)->patchJson(route('admin.mosques.update', $mosque), [
+            'admin_id' => $replacement->id,
+        ])->assertOk()->assertJsonPath('admin_id', $replacement->id);
+
+        $this->assertDatabaseHas('mosque_user', [
+            'mosque_id' => $mosque->id,
+            'user_id' => $replacement->id,
+            'membership_type' => 'administrator',
+        ]);
+        $this->actingAs($superadmin)->patchJson(route('admin.mosques.update', $mosque), [
+            'admin_id' => null,
+        ])->assertStatus(422);
+        $this->assertSame($replacement->id, $mosque->fresh()->admin_id);
     }
 
     public function test_user_can_list_but_cannot_create_or_update_mosques(): void
