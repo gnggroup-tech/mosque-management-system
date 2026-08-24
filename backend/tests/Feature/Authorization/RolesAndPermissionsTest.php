@@ -36,6 +36,7 @@ class RolesAndPermissionsTest extends TestCase
         $this->assertTrue($superadmin->hasPermissionTo('platform.manage'));
         $this->assertTrue($superadmin->hasPermissionTo('admins.manage'));
         $this->assertTrue($superadmin->hasPermissionTo('users.approve'));
+        $this->assertTrue($superadmin->hasPermissionTo('users.directory.view'));
         $this->assertTrue($superadmin->hasPermissionTo('users.suspend'));
         $this->assertTrue($superadmin->hasPermissionTo('users.reactivate'));
         $this->assertTrue($superadmin->hasPermissionTo('users.archive'));
@@ -53,6 +54,7 @@ class RolesAndPermissionsTest extends TestCase
         $this->assertFalse($admin->can('platform.manage'));
         $this->assertFalse($admin->can('admins.manage'));
         $this->assertFalse($admin->can('users.approve'));
+        $this->assertFalse($admin->can('users.directory.view'));
         $this->assertFalse($admin->can('users.suspend'));
         $this->assertFalse($admin->can('users.reactivate'));
         $this->assertFalse($admin->can('users.archive'));
@@ -73,6 +75,7 @@ class RolesAndPermissionsTest extends TestCase
         $this->assertFalse($user->can('mosques.update'));
         $this->assertFalse($user->can('finances.manage'));
         $this->assertFalse($user->can('users.approve'));
+        $this->assertFalse($user->can('users.directory.view'));
         $this->assertFalse($user->can('users.suspend'));
         $this->assertFalse($user->can('users.reactivate'));
         $this->assertFalse($user->can('users.archive'));
@@ -90,7 +93,7 @@ class RolesAndPermissionsTest extends TestCase
     {
         $expected = $this->canonicalPermissions();
 
-        $this->assertCount(41, $expected);
+        $this->assertCount(42, $expected);
         $this->assertCount(count(array_unique($expected)), $expected);
         $this->assertSame($expected, Permission::query()->orderBy('name')->pluck('name')->all());
     }

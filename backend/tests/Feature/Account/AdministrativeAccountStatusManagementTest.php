@@ -50,12 +50,12 @@ class AdministrativeAccountStatusManagementTest extends TestCase
     public function test_status_permissions_are_seeded_only_for_superadmin_and_idempotently(): void
     {
         $historical = collect(config('permissions.all'))
-            ->reject(fn (string $permission): bool => in_array($permission, self::PERMISSIONS, true))
+            ->reject(fn (string $permission): bool => in_array($permission, [...self::PERMISSIONS, 'users.directory.view'], true))
             ->values()
             ->all();
 
         $this->assertCount(38, $historical);
-        $this->assertSame(41, Permission::query()->count());
+        $this->assertSame(42, Permission::query()->count());
 
         foreach (self::PERMISSIONS as $permission) {
             $this->assertTrue(Permission::findByName($permission)->exists);
@@ -66,7 +66,7 @@ class AdministrativeAccountStatusManagementTest extends TestCase
 
         $this->seed(RolesAndPermissionsSeeder::class);
 
-        $this->assertSame(41, Permission::query()->count());
+        $this->assertSame(42, Permission::query()->count());
         foreach (self::PERMISSIONS as $permission) {
             $this->assertSame(1, Permission::query()->where('name', $permission)->count());
         }
