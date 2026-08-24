@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Waqf;
 
+use App\Enums\MosqueMembershipType;
 use App\Models\AuditLog;
 use App\Models\Mosque;
+use App\Models\MosqueMembership;
 use App\Models\User;
 use App\Models\WaqfAsset;
 use App\Models\WaqfExpense;
@@ -216,6 +218,11 @@ class WaqfManagementTest extends TestCase
             'status' => 'active',
             'infrastructures' => [],
             'admin_id' => $admin->id,
+        ]);
+        MosqueMembership::query()->create([
+            'mosque_id' => $mosque->id,
+            'user_id' => $admin->id,
+            'membership_type' => MosqueMembershipType::Administrator,
         ]);
 
         return [$admin, $mosque];

@@ -119,19 +119,27 @@ class WaqfController extends Controller
 
     private function assetsVisibleTo(User $user): Builder
     {
-        return WaqfAsset::query()->when($user->hasRole('admin'), fn (Builder $q) => $q->whereHas('mosque', fn (Builder $m) => $m->where('admin_id', $user->id)));
+        if ($user->hasRole('superadmin')) {
+            return WaqfAsset::query();
+        }
+
+        if ($user->hasRole('admin')) {
+            return WaqfAsset::query()->whereHas('mosque', fn (Builder $mosques) => $mosques->administrableBy($user));
+        }
+
+        return WaqfAsset::query()->whereRaw('1 = 0');
     }
 
     private function ensureMosqueManageable(User $user, int $mosqueId): void
     {
         $mosque = Mosque::query()->findOrFail($mosqueId);
-        abort_unless($user->hasRole('superadmin') || $mosque->admin_id === $user->id, 403);
+        abort_unless($user->hasRole('superadmin') || $user->canAdministerMosque($mosque), 403);
     }
 
     private function manageableAsset(User $user, int $assetId): WaqfAsset
     {
         $asset = WaqfAsset::query()->with('mosque')->findOrFail($assetId);
-        abort_unless($user->hasRole('superadmin') || $asset->mosque->admin_id === $user->id, 403);
+        abort_unless($user->hasRole('superadmin') || $user->canAdministerMosque($asset->mosque), 403);
 
         return $asset;
     }

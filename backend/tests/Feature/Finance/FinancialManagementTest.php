@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Finance;
 
+use App\Enums\MosqueMembershipType;
 use App\Models\AuditLog;
 use App\Models\Donation;
 use App\Models\Expense;
 use App\Models\Mosque;
+use App\Models\MosqueMembership;
 use App\Models\Subsidy;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -90,6 +92,7 @@ class FinancialManagementTest extends TestCase
         $admin = User::factory()->create(['email' => $suffix.'-finance@example.com']);
         $admin->assignRole('admin');
         $mosque = Mosque::query()->create(['code' => 'FIN-'.strtoupper($suffix), 'name' => 'Mosquée '.$suffix, 'address' => 'Conakry', 'region' => 'Conakry', 'prefecture' => 'Conakry', 'commune' => 'Ratoma', 'status' => 'active', 'infrastructures' => [], 'admin_id' => $admin->id]);
+        MosqueMembership::query()->create(['mosque_id' => $mosque->id, 'user_id' => $admin->id, 'membership_type' => MosqueMembershipType::Administrator]);
 
         return [$admin, $mosque];
     }

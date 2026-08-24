@@ -117,13 +117,21 @@ class ZakatController extends Controller
 
     private function collectionsVisibleTo(User $user): Builder
     {
-        return ZakatCollection::query()->when($user->hasRole('admin'), fn (Builder $q) => $q->whereHas('mosque', fn (Builder $m) => $m->where('admin_id', $user->id)));
+        if ($user->hasRole('superadmin')) {
+            return ZakatCollection::query();
+        }
+
+        if ($user->hasRole('admin')) {
+            return ZakatCollection::query()->whereHas('mosque', fn (Builder $mosques) => $mosques->administrableBy($user));
+        }
+
+        return ZakatCollection::query()->whereRaw('1 = 0');
     }
 
     private function ensureMosqueManageable(User $user, int $mosqueId): void
     {
         $mosque = Mosque::query()->findOrFail($mosqueId);
-        abort_unless($user->hasRole('superadmin') || $mosque->admin_id === $user->id, 403);
+        abort_unless($user->hasRole('superadmin') || $user->canAdministerMosque($mosque), 403);
     }
 
     private function ensureFaithfulBelongsToMosque(?int $faithfulId, int $mosqueId): void

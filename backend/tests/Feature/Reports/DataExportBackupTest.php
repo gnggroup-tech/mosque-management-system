@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Reports;
 
+use App\Enums\MosqueMembershipType;
 use App\Models\AuditLog;
 use App\Models\Donation;
 use App\Models\Mosque;
+use App\Models\MosqueMembership;
 use App\Models\User;
 use App\Services\BackupRestorePreparer;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -220,6 +222,11 @@ class DataExportBackupTest extends TestCase
             'status' => 'active',
             'infrastructures' => [],
             'admin_id' => $admin->id,
+        ]);
+        MosqueMembership::query()->create([
+            'mosque_id' => $mosque->id,
+            'user_id' => $admin->id,
+            'membership_type' => MosqueMembershipType::Administrator,
         ]);
 
         return [$admin, $mosque];

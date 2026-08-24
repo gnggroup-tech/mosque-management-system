@@ -28,6 +28,9 @@ class FinanceController extends Controller
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date', 'after_or_equal:from'],
         ]);
+        if ($request->filled('mosque_id')) {
+            $this->ensureManageable($request->user(), $request->integer('mosque_id'));
+        }
         $mosqueIds = $this->visibleMosques($request->user())
             ->when($request->filled('mosque_id'), fn (Builder $q) => $q->whereKey($request->integer('mosque_id')))
             ->pluck('id');
@@ -122,13 +125,13 @@ class FinanceController extends Controller
 
     private function visibleMosques(User $user): Builder
     {
-        return Mosque::query()->when($user->hasRole('admin'), fn (Builder $q) => $q->where('admin_id', $user->id));
+        return Mosque::query()->administrableBy($user);
     }
 
     private function ensureManageable(User $user, int $mosqueId): void
     {
         $mosque = Mosque::query()->findOrFail($mosqueId);
-        abort_unless($user->hasRole('superadmin') || $mosque->admin_id === $user->id, 403);
+        abort_unless($user->hasRole('superadmin') || $user->canAdministerMosque($mosque), 403);
     }
 
     private function number(string $prefix): string
