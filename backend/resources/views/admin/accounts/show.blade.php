@@ -11,6 +11,12 @@
 
     <div class="py-8" x-data="accountDirectoryPage()" x-init="init()">
         <div class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
+            @if (session('status'))
+                <div role="status" class="rounded-md bg-emerald-50 p-4 text-sm font-medium text-emerald-800">{{ session('status') }}</div>
+            @endif
+            @if ($errors->has('invitation'))
+                <div role="alert" class="rounded-md bg-red-50 p-4 text-sm font-medium text-red-700">{{ $errors->first('invitation') }}</div>
+            @endif
             <div x-cloak x-show="message" x-text="message" role="status" class="rounded-md bg-emerald-50 p-4 text-sm font-medium text-emerald-800"></div>
 
             <section class="rounded-lg bg-white p-5 shadow-sm sm:p-6" aria-labelledby="account-details-heading">
@@ -21,6 +27,16 @@
                     </div>
                     @include('admin.accounts.partials.actions', ['account' => $account])
                 </div>
+
+                @if ($account->isPendingEmail() && Illuminate\Support\Facades\Gate::allows('invite', App\Models\User::class))
+                    <form method="POST" action="{{ route('admin.accounts.invitations.resend', $account) }}" class="mt-5" x-data="{ submitting: false }" x-on:submit="submitting = true">
+                        @csrf
+                        <button type="submit" x-bind:disabled="submitting" class="inline-flex rounded-md bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-600 disabled:cursor-wait disabled:opacity-50">
+                            <span x-show="! submitting">{{ __('Resend invitation') }}</span>
+                            <span x-cloak x-show="submitting">{{ __('Sending…') }}</span>
+                        </button>
+                    </form>
+                @endif
 
                 <dl class="mt-6 grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('Account ID') }}</dt><dd class="mt-1 text-sm text-gray-900">{{ $account->getKey() }}</dd></div>

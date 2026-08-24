@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAccountIsActive;
+use App\Http\Middleware\SetInvitationLocale;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [SetLocale::class]);
         $middleware->alias([
             'account.active' => EnsureAccountIsActive::class,
+            'invitation.locale' => SetInvitationLocale::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
