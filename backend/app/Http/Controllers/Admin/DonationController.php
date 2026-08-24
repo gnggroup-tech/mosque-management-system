@@ -135,16 +135,21 @@ class DonationController extends Controller
 
     private function visibleTo(User $user): Builder
     {
-        return Donation::query()->when(
-            $user->hasRole('admin'),
-            fn (Builder $query) => $query->whereHas('mosque', fn (Builder $mosques) => $mosques->where('admin_id', $user->id))
-        );
+        if ($user->hasRole('superadmin')) {
+            return Donation::query();
+        }
+
+        if ($user->hasRole('admin')) {
+            return Donation::query()->whereHas('mosque', fn (Builder $mosques) => $mosques->administrableBy($user));
+        }
+
+        return Donation::query()->whereRaw('1 = 0');
     }
 
     private function ensureMosqueManageable(User $user, int $mosqueId): void
     {
         $mosque = Mosque::query()->findOrFail($mosqueId);
-        abort_unless($user->hasRole('superadmin') || $mosque->admin_id === $user->id, 403);
+        abort_unless($user->hasRole('superadmin') || $user->canAdministerMosque($mosque), 403);
     }
 
     private function ensureFaithfulBelongsToMosque(?int $faithfulId, int $mosqueId): void

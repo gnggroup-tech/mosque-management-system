@@ -37,7 +37,7 @@ class ReportExportService
     public function mosquesFor(User $user): Collection
     {
         return Mosque::query()
-            ->when(! $user->hasRole('superadmin'), fn (Builder $query) => $query->where('admin_id', $user->id))
+            ->administrableBy($user)
             ->orderBy('name')
             ->get(['id', 'code', 'name']);
     }
@@ -95,7 +95,7 @@ class ReportExportService
     public function filename(string $type, string $format, array $filters, User $user): string
     {
         $mosque = isset($filters['mosque_id'])
-            ? Mosque::query()->find($filters['mosque_id'])
+            ? $this->authorizedMosque($user, (int) $filters['mosque_id'])
             : null;
         $scope = $mosque ? Str::slug($mosque->code ?: $mosque->name) : ($user->hasRole('superadmin') ? 'all-mosques' : 'my-mosques');
 
@@ -125,18 +125,21 @@ class ReportExportService
     {
         abort_unless($user->hasAnyRole(['admin', 'superadmin']), 403);
 
-        $query = Mosque::query()->when(
-            ! $user->hasRole('superadmin'),
-            fn (Builder $mosques) => $mosques->where('admin_id', $user->id)
-        );
-
         if ($requestedMosqueId !== null) {
-            abort_unless((clone $query)->whereKey($requestedMosqueId)->exists(), 403);
+            $this->authorizedMosque($user, $requestedMosqueId);
 
             return collect([$requestedMosqueId]);
         }
 
-        return $query->pluck('id');
+        return Mosque::query()->administrableBy($user)->pluck('id');
+    }
+
+    private function authorizedMosque(User $user, int $mosqueId): Mosque
+    {
+        $mosque = Mosque::query()->find($mosqueId);
+        abort_unless($mosque !== null && ($user->hasRole('superadmin') || $user->canAdministerMosque($mosque)), 403);
+
+        return $mosque;
     }
 
     private function relations(string $type): array

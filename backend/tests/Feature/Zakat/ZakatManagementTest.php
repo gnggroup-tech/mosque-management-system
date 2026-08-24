@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Zakat;
 
+use App\Enums\MosqueMembershipType;
 use App\Models\AuditLog;
 use App\Models\Mosque;
+use App\Models\MosqueMembership;
 use App\Models\User;
 use App\Models\ZakatBeneficiary;
 use App\Models\ZakatCollection;
@@ -98,6 +100,7 @@ class ZakatManagementTest extends TestCase
         $admin = User::factory()->create(['email' => $suffix.'-zakat@example.com']);
         $admin->assignRole('admin');
         $mosque = Mosque::query()->create(['code' => 'ZAK-'.strtoupper($suffix), 'name' => 'Mosquée '.$suffix, 'address' => 'Conakry', 'region' => 'Conakry', 'prefecture' => 'Conakry', 'commune' => 'Ratoma', 'status' => 'active', 'infrastructures' => [], 'admin_id' => $admin->id]);
+        MosqueMembership::query()->create(['mosque_id' => $mosque->id, 'user_id' => $admin->id, 'membership_type' => MosqueMembershipType::Administrator]);
 
         return [$admin, $mosque];
     }
