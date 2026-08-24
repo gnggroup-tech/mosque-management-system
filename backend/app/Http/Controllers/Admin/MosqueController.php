@@ -7,6 +7,7 @@ use App\Http\Requests\Mosque\StoreMosqueRequest;
 use App\Http\Requests\Mosque\UpdateMosqueRequest;
 use App\Models\Mosque;
 use App\Models\User;
+use App\Services\MosquePrimaryAdministratorService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,17 +32,17 @@ class MosqueController extends Controller
         return response()->json($mosques);
     }
 
-    public function store(StoreMosqueRequest $request): JsonResponse
-    {
+    public function store(
+        StoreMosqueRequest $request,
+        MosquePrimaryAdministratorService $administratorService,
+    ): JsonResponse {
         $data = $request->validated();
 
         if (! $request->user()->hasRole('superadmin')) {
             $data['admin_id'] = $request->user()->getKey();
-        } elseif (isset($data['admin_id'])) {
-            $this->ensureAdministrator($data['admin_id']);
         }
 
-        $mosque = Mosque::query()->create($data);
+        $mosque = $administratorService->create($data, $request->user());
 
         return response()->json($mosque->load('administrator:id,name,email'), 201);
     }
@@ -53,18 +54,19 @@ class MosqueController extends Controller
         return response()->json($mosque->load('administrator:id,name,email'));
     }
 
-    public function update(UpdateMosqueRequest $request, Mosque $mosque): JsonResponse
-    {
+    public function update(
+        UpdateMosqueRequest $request,
+        Mosque $mosque,
+        MosquePrimaryAdministratorService $administratorService,
+    ): JsonResponse {
         $this->ensureVisible($request->user(), $mosque);
         $data = $request->validated();
 
         if (! $request->user()->hasRole('superadmin')) {
             unset($data['admin_id']);
-        } elseif (array_key_exists('admin_id', $data) && $data['admin_id'] !== null) {
-            $this->ensureAdministrator($data['admin_id']);
         }
 
-        $mosque->update($data);
+        $mosque = $administratorService->update($mosque, $data, $request->user());
 
         return response()->json($mosque->fresh()->load('administrator:id,name,email'));
     }
@@ -88,10 +90,5 @@ class MosqueController extends Controller
     private function ensureVisible(User $user, Mosque $mosque): void
     {
         abort_unless($user->hasRole('superadmin') || $mosque->admin_id === $user->getKey(), 403);
-    }
-
-    private function ensureAdministrator(int $adminId): void
-    {
-        abort_unless(User::query()->findOrFail($adminId)->hasRole('admin'), 422, 'The selected user must have the admin role.');
     }
 }

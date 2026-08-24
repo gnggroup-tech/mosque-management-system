@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Enums\AccountStatus;
+use App\Enums\MosqueMembershipType;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -57,6 +59,31 @@ class User extends Authenticatable
     public function administeredMosques(): HasMany
     {
         return $this->hasMany(Mosque::class, 'admin_id');
+    }
+
+    public function mosques(): BelongsToMany
+    {
+        return $this->belongsToMany(Mosque::class)
+            ->using(MosqueMembership::class)
+            ->withPivot(['id', 'membership_type', 'assigned_by'])
+            ->withTimestamps();
+    }
+
+    public function mosqueMemberships(): HasMany
+    {
+        return $this->hasMany(MosqueMembership::class);
+    }
+
+    public function canAdministerMosque(Mosque|int $mosque): bool
+    {
+        $mosqueId = $mosque instanceof Mosque ? $mosque->getKey() : $mosque;
+
+        return $this->isActive()
+            && $this->hasRole('admin')
+            && $this->mosqueMemberships()
+                ->where('mosque_id', $mosqueId)
+                ->where('membership_type', MosqueMembershipType::Administrator->value)
+                ->exists();
     }
 
     public function invitation(): HasOne

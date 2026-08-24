@@ -154,5 +154,22 @@
     "Your invitation was accepted. An administrator must approve your account before you can sign in.": "تم قبول دعوتك. يجب أن يوافق المسؤول على حسابك قبل تسجيل الدخول.",
     "Password": "كلمة المرور",
     "Confirm Password": "تأكيد كلمة المرور",
-    "Processing…": "جارٍ التنفيذ…"
+    "Manage role and mosques": "إدارة الدور والمساجد",
+    "Back to account": "العودة إلى الحساب",
+    "Provision :name without changing identity or account status.": "تهيئة :name دون تغيير الهوية أو حالة الحساب.",
+    "The provisioning request could not be applied.": "تعذر تطبيق طلب التهيئة.",
+    "The provisioning request is invalid or the account changed. Refresh and try again.": "الطلب غير صالح أو تغير الحساب. حدّث الصفحة وحاول مجددًا.",
+    "The account role and mosque memberships were updated.": "تم تحديث دور الحساب وارتباطاته بالمساجد.",
+    "Application role": "دور التطبيق",
+    "A local administrator also requires at least one administrator membership.": "يحتاج المسؤول المحلي أيضًا إلى ارتباط إداري واحد على الأقل.",
+    "Canonical mosque memberships": "الارتباطات الأساسية بالمساجد",
+    "Religious council functions are managed separately and will not change.": "تدار الوظائف الدينية في المجلس بشكل منفصل ولن تتغير.",
+    "Member": "عضو",
+    "Local administrator": "مسؤول محلي",
+    "Set as historical primary administrator": "تعيينه مسؤولًا رئيسيًا تاريخيًا",
+    "Replacement if removed": "البديل عند الإزالة",
+    "Select an active replacement": "اختر بديلًا نشطًا",
+    "No active mosque is available.": "لا يوجد مسجد نشط متاح.",
+    "Save provisioning": "حفظ التهيئة",
+    "This may demote the account or remove mosque access. Confirm this privileged change?": "قد يؤدي هذا إلى خفض دور الحساب أو إزالة وصوله إلى مسجد. أكّد هذا التغيير المميّز."
 }

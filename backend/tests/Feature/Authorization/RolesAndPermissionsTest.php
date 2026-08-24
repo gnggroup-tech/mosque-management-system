@@ -41,6 +41,8 @@ class RolesAndPermissionsTest extends TestCase
         $this->assertTrue($superadmin->hasPermissionTo('users.suspend'));
         $this->assertTrue($superadmin->hasPermissionTo('users.reactivate'));
         $this->assertTrue($superadmin->hasPermissionTo('users.archive'));
+        $this->assertTrue($superadmin->hasPermissionTo('users.roles.manage'));
+        $this->assertTrue($superadmin->hasPermissionTo('users.mosques.manage'));
         $this->assertTrue($superadmin->hasPermissionTo('audit.view'));
     }
 
@@ -60,6 +62,8 @@ class RolesAndPermissionsTest extends TestCase
         $this->assertFalse($admin->can('users.suspend'));
         $this->assertFalse($admin->can('users.reactivate'));
         $this->assertFalse($admin->can('users.archive'));
+        $this->assertFalse($admin->can('users.roles.manage'));
+        $this->assertFalse($admin->can('users.mosques.manage'));
         $this->assertFalse($admin->can('audit.view'));
         $this->assertFalse($admin->can('mosques.delete'));
     }
@@ -82,6 +86,8 @@ class RolesAndPermissionsTest extends TestCase
         $this->assertFalse($user->can('users.suspend'));
         $this->assertFalse($user->can('users.reactivate'));
         $this->assertFalse($user->can('users.archive'));
+        $this->assertFalse($user->can('users.roles.manage'));
+        $this->assertFalse($user->can('users.mosques.manage'));
     }
 
     public function test_seeder_can_be_run_more_than_once_without_duplicates(): void
@@ -96,7 +102,7 @@ class RolesAndPermissionsTest extends TestCase
     {
         $expected = $this->canonicalPermissions();
 
-        $this->assertCount(43, $expected);
+        $this->assertCount(45, $expected);
         $this->assertCount(count(array_unique($expected)), $expected);
         $this->assertSame($expected, Permission::query()->orderBy('name')->pluck('name')->all());
     }

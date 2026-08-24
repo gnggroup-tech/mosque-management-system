@@ -6,6 +6,11 @@
                 <h1 class="mt-1 text-xl font-semibold text-gray-800">{{ $account->name }}</h1>
             </div>
             <x-account-status-badge :status="$account->status" />
+            @can('provision', $account)
+                <a href="{{ route('admin.accounts.provisioning.edit', $account) }}" class="inline-flex justify-center rounded-md bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-600">
+                    {{ __('Manage role and mosques') }}
+                </a>
+            @endcan
         </div>
     </x-slot>
 

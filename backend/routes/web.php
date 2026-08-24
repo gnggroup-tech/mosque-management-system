@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AccountApprovalController;
 use App\Http\Controllers\Admin\AccountDirectoryController;
+use App\Http\Controllers\Admin\AccountProvisioningController;
 use App\Http\Controllers\Admin\AccountStatusController;
 use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\AnnouncementController;
@@ -46,6 +47,12 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::post('/accounts/{account}/invitation/resend', [UserInvitationController::class, 'resend'])
             ->middleware(['permission:users.invite', 'throttle:6,1'])
             ->name('accounts.invitations.resend');
+        Route::get('/accounts/{account}/provisioning', [AccountProvisioningController::class, 'edit'])
+            ->middleware(['permission:users.roles.manage', 'permission:users.mosques.manage'])
+            ->name('accounts.provisioning.edit');
+        Route::patch('/accounts/{account}/provisioning', [AccountProvisioningController::class, 'update'])
+            ->middleware(['permission:users.roles.manage', 'permission:users.mosques.manage', 'throttle:10,1'])
+            ->name('accounts.provisioning.update');
         Route::get('/accounts', [AccountDirectoryController::class, 'index'])
             ->middleware('permission:users.directory.view')
             ->name('accounts.index');

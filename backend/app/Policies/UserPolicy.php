@@ -6,6 +6,25 @@ use App\Models\User;
 
 class UserPolicy
 {
+    public function manageRole(User $actor, User $account): bool
+    {
+        return $this->canProvision($actor, $account)
+            && $actor->hasRole('superadmin')
+            && $actor->can('users.roles.manage');
+    }
+
+    public function manageMosques(User $actor, User $account): bool
+    {
+        return $this->canProvision($actor, $account)
+            && $actor->hasRole('superadmin')
+            && $actor->can('users.mosques.manage');
+    }
+
+    public function provision(User $actor, User $account): bool
+    {
+        return $this->manageRole($actor, $account) && $this->manageMosques($actor, $account);
+    }
+
     public function invite(User $actor): bool
     {
         return $actor->can('users.invite');
@@ -39,5 +58,13 @@ class UserPolicy
     public function archive(User $actor, User $account): bool
     {
         return $actor->can('users.archive') && ! $actor->is($account);
+    }
+
+    private function canProvision(User $actor, User $account): bool
+    {
+        return $actor->isActive()
+            && $account->isActive()
+            && ! $actor->is($account)
+            && ! $account->hasRole('superadmin');
     }
 }
