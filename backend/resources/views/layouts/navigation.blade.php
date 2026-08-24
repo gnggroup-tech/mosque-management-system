@@ -15,6 +15,11 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    @can('viewAny', App\Models\User::class)
+                        <x-nav-link :href="route('admin.accounts.index')" :active="request()->routeIs('admin.accounts.*')">
+                            {{ __('Accounts') }}
+                        </x-nav-link>
+                    @endcan
                     @can('reports.view')
                         <x-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
                             {{ __('Data exports') }}
@@ -75,6 +80,11 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+            @can('viewAny', App\Models\User::class)
+                <x-responsive-nav-link :href="route('admin.accounts.index')" :active="request()->routeIs('admin.accounts.*')">
+                    {{ __('Accounts') }}
+                </x-responsive-nav-link>
+            @endcan
             @can('reports.view')
                 <x-responsive-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
                     {{ __('Data exports') }}
