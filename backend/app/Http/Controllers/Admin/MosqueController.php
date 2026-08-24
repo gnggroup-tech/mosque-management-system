@@ -36,11 +36,8 @@ class MosqueController extends Controller
         StoreMosqueRequest $request,
         MosquePrimaryAdministratorService $administratorService,
     ): JsonResponse {
+        abort_unless($request->user()->isActive() && $request->user()->hasRole('superadmin'), 403);
         $data = $request->validated();
-
-        if (! $request->user()->hasRole('superadmin')) {
-            $data['admin_id'] = $request->user()->getKey();
-        }
 
         $mosque = $administratorService->create($data, $request->user());
 
@@ -81,14 +78,11 @@ class MosqueController extends Controller
 
     private function visibleTo(User $user): Builder
     {
-        return Mosque::query()->when(
-            ! $user->hasRole('superadmin'),
-            fn (Builder $query) => $query->where('admin_id', $user->getKey()),
-        );
+        return Mosque::query()->administrableBy($user);
     }
 
     private function ensureVisible(User $user, Mosque $mosque): void
     {
-        abort_unless($user->hasRole('superadmin') || $mosque->admin_id === $user->getKey(), 403);
+        abort_unless($user->hasRole('superadmin') || $user->canAdministerMosque($mosque), 403);
     }
 }

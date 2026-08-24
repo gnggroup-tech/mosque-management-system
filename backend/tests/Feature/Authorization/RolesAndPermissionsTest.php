@@ -34,6 +34,7 @@ class RolesAndPermissionsTest extends TestCase
 
         $this->assertSame(Permission::count(), $superadmin->permissions()->count());
         $this->assertTrue($superadmin->hasPermissionTo('platform.manage'));
+        $this->assertTrue($superadmin->hasPermissionTo('mosques.create'));
         $this->assertTrue($superadmin->hasPermissionTo('admins.manage'));
         $this->assertTrue($superadmin->hasPermissionTo('users.approve'));
         $this->assertTrue($superadmin->hasPermissionTo('users.directory.view'));
@@ -52,6 +53,7 @@ class RolesAndPermissionsTest extends TestCase
         $admin->assignRole('admin');
 
         $this->assertTrue($admin->can('mosques.update'));
+        $this->assertFalse($admin->can('mosques.create'));
         $this->assertTrue($admin->can('councils.create'));
         $this->assertTrue($admin->can('finances.manage'));
         $this->assertFalse($admin->can('platform.manage'));

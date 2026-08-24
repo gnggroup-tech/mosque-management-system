@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\MosqueMembershipType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +20,25 @@ class Mosque extends Model
     protected function casts(): array
     {
         return ['infrastructures' => 'array', 'latitude' => 'decimal:7', 'longitude' => 'decimal:7'];
+    }
+
+    public function scopeAdministrableBy(Builder $query, User $user): Builder
+    {
+        if (! $user->isActive()) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->hasRole('superadmin')) {
+            return $query;
+        }
+
+        if (! $user->hasRole('admin')) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('memberships', fn (Builder $memberships) => $memberships
+            ->where('user_id', $user->getKey())
+            ->where('membership_type', MosqueMembershipType::Administrator->value));
     }
 
     public function administrator(): BelongsTo

@@ -19,7 +19,7 @@ return [
     'roles' => [
         'superadmin' => $all,
         'admin' => [
-            'mosques.view', 'mosques.create', 'mosques.update',
+            'mosques.view', 'mosques.update',
             'councils.view', 'councils.create', 'councils.update', 'councils.delete',
             'council-members.view', 'council-members.create', 'council-members.update', 'council-members.delete',
             'council-meetings.view', 'council-meetings.manage',
