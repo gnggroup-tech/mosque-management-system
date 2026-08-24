@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\AccountStatus;
+use App\Enums\MosqueMembershipType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Announcement\StoreAnnouncementRequest;
 use App\Http\Requests\Announcement\UpdateAnnouncementRequest;
@@ -101,12 +103,18 @@ class AnnouncementController extends Controller
             return Announcement::query();
         }
         if ($user->hasRole('admin')) {
-            return Announcement::query()->where(fn (Builder $q) => $q->whereNull('mosque_id')->orWhereHas('mosque', fn (Builder $m) => $m->where('admin_id', $user->id)));
+            return Announcement::query()->where(fn (Builder $query) => $query
+                ->whereNull('mosque_id')
+                ->orWhereHas('mosque', fn (Builder $mosques) => $mosques->administrableBy($user)));
         }
 
-        return Announcement::query()->whereHas('receipts', fn (Builder $q) => $q->where('user_id', $user->id))
-            ->where('status', 'published')->where(fn (Builder $q) => $q->whereNull('visible_from')->orWhere('visible_from', '<=', now()))
-            ->where(fn (Builder $q) => $q->whereNull('visible_until')->orWhere('visible_until', '>=', now()));
+        if ($user->hasRole('user')) {
+            return Announcement::query()->whereHas('receipts', fn (Builder $q) => $q->where('user_id', $user->id))
+                ->where('status', 'published')->where(fn (Builder $q) => $q->whereNull('visible_from')->orWhere('visible_from', '<=', now()))
+                ->where(fn (Builder $q) => $q->whereNull('visible_until')->orWhere('visible_until', '>=', now()));
+        }
+
+        return Announcement::query()->whereRaw('1 = 0');
     }
 
     private function recipients(Announcement $announcement): Collection
@@ -114,8 +122,14 @@ class AnnouncementController extends Controller
         $query = User::query();
         if ($announcement->mosque_id !== null) {
             $mosqueId = $announcement->mosque_id;
-            $query->where(fn (Builder $q) => $q->whereHas('administeredMosques', fn (Builder $m) => $m->whereKey($mosqueId))
-                ->orWhereHas('faithfulRecords', fn (Builder $f) => $f->where('mosque_id', $mosqueId)));
+            $query->where(fn (Builder $recipients) => $recipients
+                ->where(fn (Builder $administrators) => $administrators
+                    ->where('status', AccountStatus::Active->value)
+                    ->whereHas('roles', fn (Builder $roles) => $roles->where('name', 'admin'))
+                    ->whereHas('mosqueMemberships', fn (Builder $memberships) => $memberships
+                        ->where('mosque_id', $mosqueId)
+                        ->where('membership_type', MosqueMembershipType::Administrator->value)))
+                ->orWhereHas('faithfulRecords', fn (Builder $faithful) => $faithful->where('mosque_id', $mosqueId)));
         }
         if ($announcement->audience === 'administrators') {
             $query->role(['superadmin', 'admin']);
@@ -133,6 +147,7 @@ class AnnouncementController extends Controller
             return;
         }
         abort_if($mosqueId === null, 403, 'Seul le superadministrateur peut diffuser une annonce nationale.');
-        abort_unless(Mosque::query()->whereKey($mosqueId)->where('admin_id', $user->id)->exists(), 403);
+        $mosque = Mosque::query()->findOrFail($mosqueId);
+        abort_unless($user->canAdministerMosque($mosque), 403);
     }
 }

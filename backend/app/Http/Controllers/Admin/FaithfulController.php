@@ -72,14 +72,24 @@ class FaithfulController extends Controller
 
     private function visibleTo(User $user): Builder
     {
-        return Faithful::query()
-            ->when($user->hasRole('admin'), fn (Builder $q) => $q->whereHas('mosque', fn (Builder $m) => $m->where('admin_id', $user->id)))
-            ->when($user->hasRole('user'), fn (Builder $q) => $q->where('user_id', $user->id));
+        if ($user->hasRole('superadmin')) {
+            return Faithful::query();
+        }
+
+        if ($user->hasRole('admin')) {
+            return Faithful::query()->whereHas('mosque', fn (Builder $mosques) => $mosques->administrableBy($user));
+        }
+
+        if ($user->hasRole('user')) {
+            return Faithful::query()->where('user_id', $user->id);
+        }
+
+        return Faithful::query()->whereRaw('1 = 0');
     }
 
     private function ensureMosqueManageable(User $user, int $mosqueId): void
     {
         $mosque = Mosque::query()->findOrFail($mosqueId);
-        abort_unless($user->hasRole('superadmin') || $mosque->admin_id === $user->id, 403);
+        abort_unless($user->hasRole('superadmin') || $user->canAdministerMosque($mosque), 403);
     }
 }

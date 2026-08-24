@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Council;
 
+use App\Enums\MosqueMembershipType;
 use App\Models\CouncilMeeting;
 use App\Models\CouncilMember;
 use App\Models\Mosque;
 use App\Models\MosqueCouncil;
+use App\Models\MosqueMembership;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -98,6 +100,7 @@ class CouncilMeetingManagementTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
         $mosque = Mosque::query()->create(['code' => 'MOS-M'.str_pad((string) $n, 3, '0', STR_PAD_LEFT), 'name' => 'Mosquée '.$n, 'region' => 'Conakry', 'prefecture' => 'Conakry', 'commune' => 'Ratoma', 'status' => 'active', 'admin_id' => $admin->id]);
+        MosqueMembership::query()->create(['mosque_id' => $mosque->id, 'user_id' => $admin->id, 'membership_type' => MosqueMembershipType::Administrator]);
         $council = MosqueCouncil::query()->create(['mosque_id' => $mosque->id, 'name' => 'Conseil '.$n, 'mandate_start' => '2026-01-01', 'mandate_end' => '2030-01-01', 'status' => 'active']);
         $members = collect([1, 2])->map(function (int $i) use ($council): CouncilMember {
             $user = User::factory()->create();

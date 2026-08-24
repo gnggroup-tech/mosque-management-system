@@ -83,23 +83,34 @@ class MosqueCouncilController extends Controller
 
     private function visibleTo(User $user): Builder
     {
-        return MosqueCouncil::query()
-            ->when($user->hasRole('admin'), fn (Builder $query) => $query->whereHas(
-                'mosque',
-                fn (Builder $mosques) => $mosques->where('admin_id', $user->getKey()),
-            ))
-            ->when($user->hasRole('user'), fn (Builder $query) => $query->where('status', 'active'));
+        if ($user->hasRole('superadmin')) {
+            return MosqueCouncil::query();
+        }
+
+        if ($user->hasRole('admin')) {
+            return MosqueCouncil::query()->whereHas('mosque', fn (Builder $mosques) => $mosques->administrableBy($user));
+        }
+
+        if ($user->hasRole('user')) {
+            return MosqueCouncil::query()->where('status', 'active');
+        }
+
+        return MosqueCouncil::query()->whereRaw('1 = 0');
     }
 
     private function ensureVisible(User $user, MosqueCouncil $council): void
     {
-        if ($user->hasRole('superadmin') || $user->hasRole('user')) {
-            abort_if($user->hasRole('user') && $council->status !== 'active', 403);
+        if ($user->hasRole('superadmin')) {
+            return;
+        }
+
+        if ($user->hasRole('admin')) {
+            $this->ensureManageable($user, $council);
 
             return;
         }
 
-        $this->ensureManageable($user, $council);
+        abort_unless($user->hasRole('user') && $council->status === 'active', 403);
     }
 
     private function ensureManageable(User $user, MosqueCouncil $council): void
@@ -110,7 +121,7 @@ class MosqueCouncilController extends Controller
 
     private function ensureMosqueManageable(User $user, Mosque $mosque): void
     {
-        abort_unless($user->hasRole('superadmin') || $mosque->admin_id === $user->getKey(), 403);
+        abort_unless($user->hasRole('superadmin') || $user->canAdministerMosque($mosque), 403);
     }
 
     private function ensureNoOtherActiveCouncil(int $mosqueId, string $status, ?int $exceptId = null): void

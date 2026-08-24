@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Communication;
 
+use App\Enums\MosqueMembershipType;
 use App\Models\Announcement;
 use App\Models\Faithful;
 use App\Models\Mosque;
+use App\Models\MosqueMembership;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,7 +32,10 @@ class AnnouncementManagementTest extends TestCase
 
     private function mosque(User $admin): Mosque
     {
-        return Mosque::query()->create(['code' => fake()->unique()->bothify('MSQ-####'), 'name' => fake()->company(), 'address' => 'Conakry', 'region' => 'Conakry', 'prefecture' => 'Conakry', 'commune' => 'Ratoma', 'status' => 'active', 'admin_id' => $admin->id]);
+        $mosque = Mosque::query()->create(['code' => fake()->unique()->bothify('MSQ-####'), 'name' => fake()->company(), 'address' => 'Conakry', 'region' => 'Conakry', 'prefecture' => 'Conakry', 'commune' => 'Ratoma', 'status' => 'active', 'admin_id' => $admin->id]);
+        MosqueMembership::query()->create(['mosque_id' => $mosque->id, 'user_id' => $admin->id, 'membership_type' => MosqueMembershipType::Administrator]);
+
+        return $mosque;
     }
 
     private function faithful(User $user, Mosque $mosque, User $creator): Faithful

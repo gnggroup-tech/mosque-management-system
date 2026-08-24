@@ -71,12 +71,25 @@ class CouncilMemberController extends Controller
 
     private function visibleTo(User $user): Builder
     {
-        return CouncilMember::query()->when($user->hasRole('admin'), fn (Builder $q) => $q->whereHas('council.mosque', fn (Builder $m) => $m->where('admin_id', $user->id)))->when($user->hasRole('user'), fn (Builder $q) => $q->where('status', 'active')->whereHas('council', fn (Builder $c) => $c->where('status', 'active')));
+        if ($user->hasRole('superadmin')) {
+            return CouncilMember::query();
+        }
+
+        if ($user->hasRole('admin')) {
+            return CouncilMember::query()->whereHas('council.mosque', fn (Builder $mosques) => $mosques->administrableBy($user));
+        }
+
+        if ($user->hasRole('user')) {
+            return CouncilMember::query()->where('status', 'active')
+                ->whereHas('council', fn (Builder $councils) => $councils->where('status', 'active'));
+        }
+
+        return CouncilMember::query()->whereRaw('1 = 0');
     }
 
     private function ensureManageable(User $user, MosqueCouncil $council): void
     {
         $council->loadMissing('mosque:id,admin_id');
-        abort_unless($user->hasRole('superadmin') || $council->mosque->admin_id === $user->id, 403);
+        abort_unless($user->hasRole('superadmin') || $user->canAdministerMosque($council->mosque), 403);
     }
 }
