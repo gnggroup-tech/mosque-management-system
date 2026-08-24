@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountApprovalController;
+use App\Http\Controllers\Admin\AccountDirectoryController;
 use App\Http\Controllers\Admin\AccountStatusController;
 use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\AnnouncementController;
@@ -30,6 +31,12 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->middleware('permission:audit.view')->name('admin.audit-logs.index');
 
     Route::prefix('admin')->name('admin.')->group(function (): void {
+        Route::get('/accounts', [AccountDirectoryController::class, 'index'])
+            ->middleware('permission:users.directory.view')
+            ->name('accounts.index');
+        Route::get('/accounts/{account}', [AccountDirectoryController::class, 'show'])
+            ->middleware('permission:users.directory.view')
+            ->name('accounts.show');
         Route::patch('/accounts/{account}/approve', AccountApprovalController::class)
             ->middleware('permission:users.approve')
             ->name('accounts.approve');

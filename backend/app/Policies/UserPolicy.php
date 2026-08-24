@@ -6,6 +6,16 @@ use App\Models\User;
 
 class UserPolicy
 {
+    public function viewAny(User $actor): bool
+    {
+        return $actor->can('users.directory.view');
+    }
+
+    public function view(User $actor, User $account): bool
+    {
+        return $actor->can('users.directory.view');
+    }
+
     public function approve(User $actor, User $account): bool
     {
         return $actor->can('users.approve') && ! $actor->is($account);
