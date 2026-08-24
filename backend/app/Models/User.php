@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -56,6 +57,16 @@ class User extends Authenticatable
     public function administeredMosques(): HasMany
     {
         return $this->hasMany(Mosque::class, 'admin_id');
+    }
+
+    public function invitation(): HasOne
+    {
+        return $this->hasOne(UserInvitation::class);
+    }
+
+    public function sentInvitations(): HasMany
+    {
+        return $this->hasMany(UserInvitation::class, 'invited_by');
     }
 
     public function createdCouncils(): HasMany

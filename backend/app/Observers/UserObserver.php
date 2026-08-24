@@ -11,9 +11,7 @@ class UserObserver
 
     public function created(User $user): void
     {
-        $this->auditLogger->log('user.created', $user, [
-            'email' => $user->email,
-        ]);
+        $this->auditLogger->log('user.created', $user);
     }
 
     public function updated(User $user): void

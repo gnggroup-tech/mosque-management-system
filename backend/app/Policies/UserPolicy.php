@@ -6,6 +6,11 @@ use App\Models\User;
 
 class UserPolicy
 {
+    public function invite(User $actor): bool
+    {
+        return $actor->can('users.invite');
+    }
+
     public function viewAny(User $actor): bool
     {
         return $actor->can('users.directory.view');

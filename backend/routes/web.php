@@ -14,14 +14,20 @@ use App\Http\Controllers\Admin\FinanceController;
 use App\Http\Controllers\Admin\MosqueController;
 use App\Http\Controllers\Admin\MosqueCouncilController;
 use App\Http\Controllers\Admin\ReportExportController;
+use App\Http\Controllers\Admin\UserInvitationController;
 use App\Http\Controllers\Admin\WaqfController;
 use App\Http\Controllers\Admin\ZakatController;
+use App\Http\Controllers\Auth\InvitationAcceptanceController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => view('welcome'));
 Route::post('/locale', LocaleController::class)->middleware('throttle:20,1')->name('locale.update');
+Route::middleware(['guest', 'throttle:6,1', 'invitation.locale'])->group(function (): void {
+    Route::get('/invitations/{token}', [InvitationAcceptanceController::class, 'show'])->name('invitations.show');
+    Route::patch('/invitations/{token}', [InvitationAcceptanceController::class, 'update'])->name('invitations.update');
+});
 Route::get('/dashboard', fn () => view('dashboard'))->middleware(['auth', 'account.active', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'account.active'])->group(function () {
@@ -31,6 +37,15 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->middleware('permission:audit.view')->name('admin.audit-logs.index');
 
     Route::prefix('admin')->name('admin.')->group(function (): void {
+        Route::get('/accounts/invitations/create', [UserInvitationController::class, 'create'])
+            ->middleware('permission:users.invite')
+            ->name('accounts.invitations.create');
+        Route::post('/accounts/invitations', [UserInvitationController::class, 'store'])
+            ->middleware(['permission:users.invite', 'throttle:6,1'])
+            ->name('accounts.invitations.store');
+        Route::post('/accounts/{account}/invitation/resend', [UserInvitationController::class, 'resend'])
+            ->middleware(['permission:users.invite', 'throttle:6,1'])
+            ->name('accounts.invitations.resend');
         Route::get('/accounts', [AccountDirectoryController::class, 'index'])
             ->middleware('permission:users.directory.view')
             ->name('accounts.index');

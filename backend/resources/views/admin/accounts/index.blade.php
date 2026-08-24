@@ -5,6 +5,11 @@
                 <h1 class="text-xl font-semibold leading-tight text-gray-800">{{ __('Account directory') }}</h1>
                 <p class="mt-1 text-sm text-gray-500">{{ __('Review and manage authorized account lifecycle actions.') }}</p>
             </div>
+            @can('invite', App\Models\User::class)
+                <a href="{{ route('admin.accounts.invitations.create') }}" class="inline-flex items-center justify-center rounded-md bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    {{ __('Invite a user') }}
+                </a>
+            @endcan
         </div>
     </x-slot>
 
