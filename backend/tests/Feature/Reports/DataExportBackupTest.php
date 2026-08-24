@@ -8,12 +8,13 @@ use App\Models\Donation;
 use App\Models\Mosque;
 use App\Models\MosqueMembership;
 use App\Models\User;
+use App\Services\BackupArchiveService;
 use App\Services\BackupRestorePreparer;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -154,10 +155,8 @@ class DataExportBackupTest extends TestCase
         $this->assertStringNotContainsString('APP_KEY', $contents);
         $this->assertDatabaseHas('audit_logs', ['event' => 'backup.created']);
 
-        $encryptedUser = collect(explode("\n", trim($contents)))
-            ->map(fn (string $line) => json_decode($line, true))
-            ->firstWhere('table', 'users');
-        $userPayload = json_decode(Crypt::decryptString($encryptedUser['payload']), true);
+        $userPayload = $this->backupPayloads($files[0], 'users')
+            ->firstWhere('email', 'backup@example.com');
         $this->assertArrayNotHasKey('password', $userPayload);
         $this->assertArrayNotHasKey('remember_token', $userPayload);
     }
@@ -184,10 +183,8 @@ class DataExportBackupTest extends TestCase
 
         $this->assertSame(Command::SUCCESS, Artisan::call('sgar:backup:create'));
         $path = Storage::disk('backups')->allFiles()[0];
-        $encryptedUser = collect(explode("\n", trim(Storage::disk('backups')->get($path))))
-            ->map(fn (string $line) => json_decode($line, true))
-            ->firstWhere('table', 'users');
-        $payload = json_decode(Crypt::decryptString($encryptedUser['payload']), true);
+        $payload = $this->backupPayloads($path, 'users')
+            ->firstWhere('email', 'restore@example.com');
 
         $this->assertArrayNotHasKey('password', $payload);
         $prepared = app(BackupRestorePreparer::class)->user($payload);
@@ -255,5 +252,26 @@ class DataExportBackupTest extends TestCase
             'validated_by' => $creator->id,
             'validated_at' => $receivedAt,
         ]);
+    }
+
+    private function backupPayloads(string $path, string $table): Collection
+    {
+        $payloads = collect();
+        $stream = Storage::disk('backups')->readStream($path);
+
+        try {
+            app(BackupArchiveService::class)->verify(
+                $stream,
+                function (string $recordTable, array $payload) use ($table, $payloads): void {
+                    if ($recordTable === $table) {
+                        $payloads->push($payload);
+                    }
+                },
+            );
+        } finally {
+            fclose($stream);
+        }
+
+        return $payloads;
     }
 }

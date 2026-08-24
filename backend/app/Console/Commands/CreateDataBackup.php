@@ -3,10 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Services\AuditLogger;
+use App\Services\BackupArchiveService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -16,8 +14,10 @@ class CreateDataBackup extends Command
 
     protected $description = 'Create an encrypted backup of SGAR application data on a private disk';
 
-    public function __construct(private readonly AuditLogger $audit)
-    {
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly BackupArchiveService $archive,
+    ) {
         parent::__construct();
     }
 
@@ -35,37 +35,8 @@ class CreateDataBackup extends Command
         }
 
         try {
-            $this->writeJsonLine($stream, [
-                'format' => 'sgar-encrypted-jsonl',
-                'version' => 1,
-                'created_at' => now()->toIso8601String(),
-                'encryption' => 'laravel-encrypter-per-record',
-            ]);
-
-            foreach ((array) config('backup.tables', []) as $table) {
-                if (! Schema::hasTable($table)) {
-                    continue;
-                }
-
-                $query = DB::table($table);
-                $columns = Schema::getColumnListing($table);
-                if (in_array('id', $columns, true)) {
-                    $query->orderBy('id');
-                } elseif ($columns !== []) {
-                    $query->orderBy($columns[0]);
-                }
-
-                foreach ($query->cursor() as $row) {
-                    $payload = (array) $row;
-                    foreach ((array) config("backup.excluded_columns.{$table}", []) as $column) {
-                        unset($payload[$column]);
-                    }
-                    $this->writeJsonLine($stream, [
-                        'table' => $table,
-                        'payload' => Crypt::encryptString(json_encode($payload, JSON_THROW_ON_ERROR)),
-                    ]);
-                }
-            }
+            abort_unless(config("filesystems.disks.{$diskName}.visibility") === 'private', 500);
+            $this->archive->write($stream);
 
             rewind($stream);
             $disk = Storage::disk($diskName);
@@ -96,15 +67,6 @@ class CreateDataBackup extends Command
             return self::FAILURE;
         } finally {
             fclose($stream);
-        }
-    }
-
-    /** @param resource $stream */
-    private function writeJsonLine($stream, array $value): void
-    {
-        $encoded = json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-        if (fwrite($stream, $encoded."\n") === false) {
-            throw new \RuntimeException('Unable to write backup stream.');
         }
     }
 
