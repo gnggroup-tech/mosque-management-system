@@ -6,11 +6,10 @@ use App\Exceptions\InvitationException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Account\StoreUserInvitationRequest;
 use App\Models\User;
-use App\Notifications\UserInvitationNotification;
+use App\Services\UserInvitationDeliveryService;
 use App\Services\UserInvitationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -28,23 +27,22 @@ class UserInvitationController extends Controller
     public function store(
         StoreUserInvitationRequest $request,
         UserInvitationService $invitationService,
+        UserInvitationDeliveryService $deliveryService,
     ): RedirectResponse {
         Gate::authorize('invite', User::class);
 
         $result = $invitationService->invite($request->validated(), $request->user());
         $account = $result['invitation']->user()->firstOrFail();
-        Notification::locale($account->locale)->send(
-            $account,
-            new UserInvitationNotification($result['token'], $result['invitation']->expires_at),
-        );
+        $deliveryService->queue($result['invitation'], $account, $result['token']);
 
         return redirect()->route('admin.accounts.invitations.create')
-            ->with('status', __('The invitation was sent successfully.'));
+            ->with('status', __('The invitation email was queued successfully.'));
     }
 
     public function resend(
         User $account,
         UserInvitationService $invitationService,
+        UserInvitationDeliveryService $deliveryService,
     ): RedirectResponse {
         Gate::authorize('invite', User::class);
 
@@ -56,11 +54,8 @@ class UserInvitationController extends Controller
             ]);
         }
 
-        Notification::locale($account->locale)->send(
-            $account,
-            new UserInvitationNotification($result['token'], $result['invitation']->expires_at),
-        );
+        $deliveryService->queue($result['invitation'], $account, $result['token']);
 
-        return back()->with('status', __('The invitation was resent successfully.'));
+        return back()->with('status', __('The invitation email was queued again successfully.'));
     }
 }

@@ -50,12 +50,19 @@ class BackupRestorePreparer
 
         $row = Arr::only($payload, [
             'id', 'user_id', 'invited_by', 'token_hash', 'expires_at',
-            'accepted_at', 'created_at', 'updated_at',
+            'accepted_at', 'delivery_version', 'queue_claimed_at', 'queued_at',
+            'sent_at', 'failed_at', 'delivery_attempts', 'created_at', 'updated_at',
         ]);
 
         if (($row['accepted_at'] ?? null) === null) {
             $row['token_hash'] = hash('sha256', random_bytes(32));
             $row['expires_at'] = now()->subSecond()->format('Y-m-d H:i:s');
+            $row['delivery_version'] = ((int) ($row['delivery_version'] ?? 0)) + 1;
+            $row['queue_claimed_at'] = null;
+            $row['queued_at'] = null;
+            $row['sent_at'] = null;
+            $row['failed_at'] = null;
+            $row['delivery_attempts'] = 0;
         }
 
         return $row;

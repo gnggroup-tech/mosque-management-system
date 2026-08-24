@@ -247,8 +247,9 @@ Never restore a version 1 archive with the version 2 command, reuse an old invit
 
 The following remain unresolved and are not configured by this task:
 
-- real SMTP delivery and delivery verification;
-- queue workers, restart policy and failed-job operations;
+- SMTP credentials, provider delivery verification and bounce handling;
+- deployment-specific worker supervision and alert thresholds; follow the
+  provider-independent TASK-034C1 procedure in `docs/queued-invitations.md`;
 - scheduler execution;
 - scheduled backups and encrypted off-site replication;
 - monitoring, readiness probes, metrics, alerting and incident notification.

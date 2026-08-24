@@ -48,6 +48,7 @@ class UserInvitationService
                 'invited_by' => $actor->getKey(),
                 'token_hash' => $this->hashToken($token),
                 'expires_at' => $this->expiresAt(),
+                'delivery_version' => 1,
             ]);
 
             $this->auditLogger->log('user.invitation.created', $invitation, [
@@ -84,6 +85,12 @@ class UserInvitationService
             $invitation->forceFill([
                 'token_hash' => $this->hashToken($token),
                 'expires_at' => $this->expiresAt(),
+                'delivery_version' => $invitation->delivery_version + 1,
+                'queue_claimed_at' => null,
+                'queued_at' => null,
+                'sent_at' => null,
+                'failed_at' => null,
+                'delivery_attempts' => 0,
             ])->save();
 
             $this->auditLogger->log('user.invitation.resent', $invitation, [
