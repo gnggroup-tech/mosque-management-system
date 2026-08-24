@@ -2,18 +2,21 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\AccountStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Account\AccountDirectoryRequest;
 use App\Http\Resources\AccountDirectoryDetailResource;
 use App\Http\Resources\AccountDirectoryResource;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\View\View;
 
 class AccountDirectoryController extends Controller
 {
-    public function index(AccountDirectoryRequest $request): AnonymousResourceCollection
+    public function index(AccountDirectoryRequest $request): AnonymousResourceCollection|View
     {
         Gate::authorize('viewAny', User::class);
 
@@ -40,10 +43,19 @@ class AccountDirectoryController extends Controller
             ->paginate($filters['per_page'] ?? 20)
             ->withQueryString();
 
-        return AccountDirectoryResource::collection($accounts);
+        if ($request->expectsJson()) {
+            return AccountDirectoryResource::collection($accounts);
+        }
+
+        return view('admin.accounts.index', [
+            'accounts' => $accounts,
+            'filters' => $filters,
+            'statuses' => AccountStatus::cases(),
+            'roles' => array_keys(config('permissions.roles')),
+        ]);
     }
 
-    public function show(User $account): AccountDirectoryDetailResource
+    public function show(Request $request, User $account): AccountDirectoryDetailResource|View
     {
         Gate::authorize('view', $account);
 
@@ -52,7 +64,11 @@ class AccountDirectoryController extends Controller
             'administeredMosques:id,admin_id,name',
         ]);
 
-        return new AccountDirectoryDetailResource($account);
+        if ($request->expectsJson()) {
+            return new AccountDirectoryDetailResource($account);
+        }
+
+        return view('admin.accounts.show', ['account' => $account]);
     }
 
     private function applySearch(Builder $query, string $search): Builder
