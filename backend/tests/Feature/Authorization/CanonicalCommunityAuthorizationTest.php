@@ -16,6 +16,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class CanonicalCommunityAuthorizationTest extends TestCase
@@ -27,6 +28,7 @@ class CanonicalCommunityAuthorizationTest extends TestCase
         parent::setUp();
 
         $this->seed(RolesAndPermissionsSeeder::class);
+        Notification::fake();
     }
 
     public function test_secondary_canonical_administrator_has_local_scope_across_all_six_modules(): void
@@ -244,9 +246,15 @@ class CanonicalCommunityAuthorizationTest extends TestCase
             'user_id' => User::factory()->create()->id,
             'function' => 'imam',
             'started_at' => '2026-01-01',
-            'status' => 'inactive',
+            'status' => 'active',
             'created_by' => $creator->id,
         ]);
+        $meeting = CouncilMeeting::query()->create([
+            'mosque_council_id' => $council->id, 'title' => 'Meeting '.$suffix,
+            'agenda' => 'Agenda', 'scheduled_at' => now()->addDay(), 'status' => 'draft',
+            'created_by' => $creator->id,
+        ]);
+        $meeting->participants()->create(['council_member_id' => $member->id]);
 
         return [
             'activities' => Activity::query()->create([
@@ -257,11 +265,7 @@ class CanonicalCommunityAuthorizationTest extends TestCase
             'announcements' => $this->announcement($mosque, $creator, $suffix),
             'councils' => $council,
             'council-members' => $member,
-            'council-meetings' => CouncilMeeting::query()->create([
-                'mosque_council_id' => $council->id, 'title' => 'Meeting '.$suffix,
-                'agenda' => 'Agenda', 'scheduled_at' => now()->addDay(), 'status' => 'draft',
-                'created_by' => $creator->id,
-            ]),
+            'council-meetings' => $meeting,
             'faithful' => $this->faithful($mosque, null, $suffix),
         ];
     }

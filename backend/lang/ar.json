@@ -171,5 +171,13 @@
     "Select an active replacement": "اختر بديلًا نشطًا",
     "No active mosque is available.": "لا يوجد مسجد نشط متاح.",
     "Save provisioning": "حفظ التهيئة",
-    "This may demote the account or remove mosque access. Confirm this privileged change?": "قد يؤدي هذا إلى خفض دور الحساب أو إزالة وصوله إلى مسجد. أكّد هذا التغيير المميّز."
+    "This may demote the account or remove mosque access. Confirm this privileged change?": "قد يؤدي هذا إلى خفض دور الحساب أو إزالة وصوله إلى مسجد. أكّد هذا التغيير المميّز.",
+    "Council meeting invitation": "دعوة إلى اجتماع المجلس",
+    "You are invited to the council meeting \":title\".": "أنت مدعو إلى اجتماع المجلس «:title».",
+    "Scheduled for :date.": "الموعد: :date.",
+    "Location: :location.": "المكان: :location.",
+    "This message confirms the meeting notice only; it is not a delivery or reading receipt.": "تؤكد هذه الرسالة الدعوة فقط، ولا تُعد إثباتًا للتسليم أو القراءة.",
+    "This meeting cannot be convened in its current status.": "لا يمكن دعوة هذا الاجتماع في حالته الحالية.",
+    "Participant :id is ineligible for the notice (:reason).": "المشارك :id غير مؤهل للدعوة (:reason).",
+    "No selected participant is eligible for an e-mail notice.": "لا يوجد مشارك محدد مؤهل لدعوة عبر البريد الإلكتروني."
 }
