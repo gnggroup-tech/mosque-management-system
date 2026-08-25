@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\UserInvitationController;
 use App\Http\Controllers\Admin\WaqfController;
 use App\Http\Controllers\Admin\ZakatController;
 use App\Http\Controllers\Auth\InvitationAcceptanceController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -29,7 +30,7 @@ Route::middleware(['guest', 'throttle:6,1', 'invitation.locale'])->group(functio
     Route::get('/invitations/{token}', [InvitationAcceptanceController::class, 'show'])->name('invitations.show');
     Route::patch('/invitations/{token}', [InvitationAcceptanceController::class, 'update'])->name('invitations.update');
 });
-Route::get('/dashboard', fn () => view('dashboard'))->middleware(['auth', 'account.active', 'verified'])->name('dashboard');
+Route::get('/dashboard', DashboardController::class)->middleware(['auth', 'account.active', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'account.active'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -72,7 +73,9 @@ Route::middleware(['auth', 'account.active'])->group(function () {
             ->middleware('permission:users.archive')
             ->name('accounts.archive');
         Route::get('/mosques', [MosqueController::class, 'index'])->middleware('permission:mosques.view')->name('mosques.index');
+        Route::get('/mosques/create', [MosqueController::class, 'create'])->middleware('permission:mosques.create')->name('mosques.create');
         Route::post('/mosques', [MosqueController::class, 'store'])->middleware('permission:mosques.create')->name('mosques.store');
+        Route::get('/mosques/{mosque}/edit', [MosqueController::class, 'edit'])->middleware('permission:mosques.update')->name('mosques.edit');
         Route::get('/mosques/{mosque}', [MosqueController::class, 'show'])->middleware('permission:mosques.view')->name('mosques.show');
         Route::patch('/mosques/{mosque}', [MosqueController::class, 'update'])->middleware('permission:mosques.update')->name('mosques.update');
         Route::delete('/mosques/{mosque}', [MosqueController::class, 'destroy'])->middleware('permission:mosques.delete')->name('mosques.destroy');

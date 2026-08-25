@@ -5,3 +5,11 @@
 [x-cloak] {
     display: none !important;
 }
+
+::selection {
+    background: rgb(16 185 129 / 0.25);
+}
+
+:focus-visible {
+    scroll-margin: 6rem;
+}

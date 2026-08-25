@@ -33,4 +33,22 @@ class UpdateMosqueRequest extends FormRequest
             'admin_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'required' => __('This field is required.'),
+            'string' => __('This field must be text.'),
+            'max' => __('This field is too long.'),
+            'email' => __('Enter a valid email address.'),
+            'numeric' => __('Enter a valid number.'),
+            'between' => __('The value is outside the permitted range.'),
+            'in' => __('Choose one of the permitted values.'),
+            'integer' => __('Choose a valid administrator.'),
+            'exists' => __('The selected administrator is not available.'),
+            'array' => __('The infrastructure list is invalid.'),
+            'alpha_dash' => __('Use only letters, numbers, dashes and underscores.'),
+            'unique' => __('This mosque code is already in use.'),
+        ];
+    }
 }
