@@ -9,6 +9,7 @@ use App\Models\CouncilMeeting;
 use App\Models\CouncilMember;
 use App\Models\MosqueCouncil;
 use App\Models\User;
+use App\Services\CouncilMeetingNoticeService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -55,13 +56,19 @@ class CouncilMeetingController extends Controller
         return response()->json($meeting->load(['council.mosque:id,code,name', 'participants.member.user:id,name,email', 'decisions.responsible:id,name,email']));
     }
 
-    public function sendNotice(Request $request, CouncilMeeting $meeting): JsonResponse
-    {
+    public function sendNotice(
+        Request $request,
+        CouncilMeeting $meeting,
+        CouncilMeetingNoticeService $noticeService,
+    ): JsonResponse {
         $this->ensureMeetingManageable($request->user(), $meeting);
-        abort_unless($meeting->status === 'draft', 422, 'La convocation a déjà été envoyée.');
-        $meeting->update(['status' => 'convened', 'notice_sent_at' => now()]);
 
-        return response()->json($meeting->fresh());
+        $summary = $noticeService->queue($meeting);
+
+        return response()->json([
+            ...$meeting->fresh()->toArray(),
+            'notice_summary' => $summary,
+        ]);
     }
 
     public function recordAttendance(Request $request, CouncilMeeting $meeting): JsonResponse

@@ -171,5 +171,13 @@
     "Select an active replacement": "Sélectionner un remplaçant actif",
     "No active mosque is available.": "Aucune mosquée active n’est disponible.",
     "Save provisioning": "Enregistrer le provisionnement",
-    "This may demote the account or remove mosque access. Confirm this privileged change?": "Cette action peut rétrograder le compte ou retirer son accès à une mosquée. Confirmez cette modification privilégiée."
+    "This may demote the account or remove mosque access. Confirm this privileged change?": "Cette action peut rétrograder le compte ou retirer son accès à une mosquée. Confirmez cette modification privilégiée.",
+    "Council meeting invitation": "Convocation à la réunion du conseil",
+    "You are invited to the council meeting \":title\".": "Vous êtes convoqué à la réunion du conseil « :title ».",
+    "Scheduled for :date.": "Prévue le :date.",
+    "Location: :location.": "Lieu : :location.",
+    "This message confirms the meeting notice only; it is not a delivery or reading receipt.": "Ce message confirme uniquement la convocation ; il ne constitue pas une preuve de livraison ou de lecture.",
+    "This meeting cannot be convened in its current status.": "Cette réunion ne peut pas être convoquée dans son statut actuel.",
+    "Participant :id is ineligible for the notice (:reason).": "Le participant :id n’est pas éligible à la convocation (:reason).",
+    "No selected participant is eligible for an e-mail notice.": "Aucun participant sélectionné n’est éligible à une convocation par e-mail."
 }

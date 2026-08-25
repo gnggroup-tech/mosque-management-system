@@ -8,14 +8,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['mosque_council_id', 'title', 'agenda', 'scheduled_at', 'location', 'quorum_required', 'status', 'minutes', 'notice_sent_at', 'held_at', 'created_by'])]
+#[Fillable([
+    'mosque_council_id', 'title', 'agenda', 'scheduled_at', 'location',
+    'quorum_required', 'status', 'minutes', 'notice_sent_at', 'notice_version',
+    'notice_queue_claimed_at', 'notice_queued_at', 'legacy_notice_recorded_at',
+    'held_at', 'created_by',
+])]
 class CouncilMeeting extends Model
 {
     use SoftDeletes;
 
     protected function casts(): array
     {
-        return ['scheduled_at' => 'datetime', 'notice_sent_at' => 'datetime', 'held_at' => 'datetime'];
+        return [
+            'scheduled_at' => 'datetime',
+            'notice_sent_at' => 'datetime',
+            'notice_version' => 'integer',
+            'notice_queue_claimed_at' => 'datetime',
+            'notice_queued_at' => 'datetime',
+            'legacy_notice_recorded_at' => 'datetime',
+            'held_at' => 'datetime',
+        ];
     }
 
     public function council(): BelongsTo

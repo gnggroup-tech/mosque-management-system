@@ -11,6 +11,7 @@ use App\Models\MosqueMembership;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class CouncilMeetingManagementTest extends TestCase
@@ -21,6 +22,7 @@ class CouncilMeetingManagementTest extends TestCase
     {
         parent::setUp();
         $this->seed(RolesAndPermissionsSeeder::class);
+        Notification::fake();
     }
 
     public function test_admin_can_create_meeting_for_assigned_mosque(): void
@@ -54,12 +56,18 @@ class CouncilMeetingManagementTest extends TestCase
         $this->actingAs($admin)->postJson(route('admin.council-meetings.store'), $payload)->assertUnprocessable();
     }
 
-    public function test_notice_can_be_sent_only_once(): void
+    public function test_notice_action_is_idempotent_after_success(): void
     {
         [$admin, $council, $members] = $this->context();
         $meeting = $this->meeting($admin, $council, $members);
-        $this->actingAs($admin)->postJson(route('admin.council-meetings.send-notice', $meeting))->assertOk()->assertJsonPath('status', 'convened');
-        $this->actingAs($admin)->postJson(route('admin.council-meetings.send-notice', $meeting))->assertUnprocessable();
+        $this->actingAs($admin)->postJson(route('admin.council-meetings.send-notice', $meeting))
+            ->assertOk()
+            ->assertJsonPath('status', 'convened')
+            ->assertJsonPath('notice_summary.sent_count', 2);
+        $this->actingAs($admin)->postJson(route('admin.council-meetings.send-notice', $meeting))
+            ->assertOk()
+            ->assertJsonPath('notice_summary.sent_count', 2);
+        Notification::assertCount(2);
     }
 
     public function test_meeting_cannot_close_without_quorum(): void
