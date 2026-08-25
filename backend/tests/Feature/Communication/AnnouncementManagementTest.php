@@ -63,7 +63,7 @@ class AnnouncementManagementTest extends TestCase
         $this->actingAs($admin)->postJson(route('admin.announcements.store'), $this->payload($this->mosque($other)))->assertForbidden();
     }
 
-    public function test_publishing_is_irreversible_and_creates_targeted_receipts(): void
+    public function test_publishing_is_idempotent_and_creates_targeted_receipts(): void
     {
         $admin = $this->user('admin');
         $mosque = $this->mosque($admin);
@@ -73,9 +73,15 @@ class AnnouncementManagementTest extends TestCase
         $announcement = Announcement::query()->create($this->payload($mosque) + ['created_by' => $admin->id, 'status' => 'draft']);
 
         $this->actingAs($admin)->postJson(route('admin.announcements.publish', $announcement))->assertOk()->assertJsonPath('status', 'published');
-        $this->assertDatabaseHas('announcement_receipts', ['announcement_id' => $announcement->id, 'user_id' => $target->id]);
+        $this->assertDatabaseHas('announcement_receipts', ['announcement_id' => $announcement->id, 'user_id' => $target->id, 'read_at' => null]);
+        $receipt = $announcement->receipts()->where('user_id', $target->id)->sole();
+        $this->assertNotNull($receipt->available_at);
+        $this->assertTrue($receipt->available_at->equalTo($receipt->delivered_at));
         $this->assertDatabaseMissing('announcement_receipts', ['announcement_id' => $announcement->id, 'user_id' => $outsider->id]);
-        $this->actingAs($admin)->postJson(route('admin.announcements.publish', $announcement->fresh()))->assertUnprocessable();
+        $this->actingAs($admin)->postJson(route('admin.announcements.publish', $announcement->fresh()))
+            ->assertOk()
+            ->assertJsonPath('receipts_count', 2);
+        $this->assertSame(2, $announcement->receipts()->count());
     }
 
     public function test_faithful_sees_only_delivered_and_current_announcements(): void

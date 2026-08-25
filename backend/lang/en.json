@@ -179,5 +179,6 @@
     "This message confirms the meeting notice only; it is not a delivery or reading receipt.": "This message confirms the meeting notice only; it is not a delivery or reading receipt.",
     "This meeting cannot be convened in its current status.": "This meeting cannot be convened in its current status.",
     "Participant :id is ineligible for the notice (:reason).": "Participant :id is ineligible for the notice (:reason).",
-    "No selected participant is eligible for an e-mail notice.": "No selected participant is eligible for an e-mail notice."
+    "No selected participant is eligible for an e-mail notice.": "No selected participant is eligible for an e-mail notice.",
+    "This announcement cannot be published in its current status.": "This announcement cannot be published in its current status."
 }
