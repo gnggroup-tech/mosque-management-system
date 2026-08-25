@@ -1,120 +1,34 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
-    <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
-                <!-- Logo -->
-                <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
-                    </a>
-                </div>
-
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                    @can('viewAny', App\Models\User::class)
-                        <x-nav-link :href="route('admin.accounts.index')" :active="request()->routeIs('admin.accounts.*')">
-                            {{ __('Accounts') }}
-                        </x-nav-link>
-                    @endcan
-                    @can('reports.view')
-                        <x-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
-                            {{ __('Data exports') }}
-                        </x-nav-link>
-                    @endcan
-                </div>
-            </div>
-
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
-
-                            <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
-
-                    <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
-                        </x-dropdown-link>
-
-                        <!-- Authentication -->
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-
-                            <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Log Out') }}
-                            </x-dropdown-link>
-                        </form>
-                    </x-slot>
-                </x-dropdown>
-            </div>
-
-            <!-- Hamburger -->
-            <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-        </div>
+@php
+    $navigation = [
+        ['label' => __('Dashboard'), 'route' => 'dashboard', 'active' => 'dashboard', 'permission' => null, 'icon' => 'home'],
+        ['label' => __('Mosques'), 'route' => 'admin.mosques.index', 'active' => 'admin.mosques.*', 'permission' => 'mosques.view', 'icon' => 'mosque'],
+        ['label' => __('Accounts'), 'route' => 'admin.accounts.index', 'active' => 'admin.accounts.*', 'permission' => 'users.directory.view', 'icon' => 'users'],
+        ['label' => __('Data exports'), 'route' => 'admin.reports.index', 'active' => 'admin.reports.*', 'permission' => 'reports.view', 'icon' => 'report'],
+    ];
+@endphp
+<div x-cloak x-show="sidebarOpen" class="fixed inset-0 z-40 bg-slate-950/50 lg:hidden" @click="sidebarOpen = false" aria-hidden="true"></div>
+<aside :class="sidebarOpen ? 'translate-x-0' : '{{ app()->getLocale() === 'ar' ? 'translate-x-full' : '-translate-x-full' }}'" class="fixed inset-y-0 start-0 z-50 flex w-72 flex-col bg-slate-950 text-white transition-transform duration-200 lg:translate-x-0" aria-label="{{ __('Main navigation') }}">
+    <div class="flex h-20 shrink-0 items-center justify-between border-b border-white/10 px-6">
+        <a href="{{ route('dashboard') }}" class="flex items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"><span class="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500 text-lg font-bold text-slate-950">G</span><span><span class="block text-sm font-bold tracking-[0.18em]">GNG GROUP</span><span class="block text-xs text-slate-400">{{ __('Mosque Management') }}</span></span></a>
+        <button type="button" @click="sidebarOpen = false" class="rounded-lg p-2 text-slate-300 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-400 lg:hidden" aria-label="{{ __('Close navigation') }}"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
     </div>
-
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-            @can('viewAny', App\Models\User::class)
-                <x-responsive-nav-link :href="route('admin.accounts.index')" :active="request()->routeIs('admin.accounts.*')">
-                    {{ __('Accounts') }}
-                </x-responsive-nav-link>
-            @endcan
-            @can('reports.view')
-                <x-responsive-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
-                    {{ __('Data exports') }}
-                </x-responsive-nav-link>
-            @endcan
-        </div>
-
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200">
-            <div class="px-4">
-                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
-            </div>
-
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-
-                <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
-                </form>
-            </div>
-        </div>
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-24 focus:z-50 focus:rounded-lg focus:bg-white focus:px-3 focus:py-2 focus:text-slate-900">{{ __('Skip to content') }}</a>
+    <nav class="min-h-0 flex-1 space-y-1 overflow-y-auto px-4 py-6">
+        @foreach ($navigation as $item)
+            @if ($item['permission'] === null || Auth::user()->can($item['permission']))
+                <a href="{{ route($item['route']) }}" @class(['group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400','bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/20' => request()->routeIs($item['active']),'text-slate-300 hover:bg-white/10 hover:text-white' => ! request()->routeIs($item['active'])]) aria-current="{{ request()->routeIs($item['active']) ? 'page' : 'false' }}">
+                    @if ($item['icon'] === 'home')<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l9-9 9 9M5 10v10h14V10M9 20v-6h6v6" /></svg>
+                    @elseif ($item['icon'] === 'mosque')<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 20h16M6 20V9h12v11M9 9V6a3 3 0 016 0v3M3 9h18M9 14h6" /></svg>
+                    @elseif ($item['icon'] === 'users')<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>
+                    @else<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m4 6V7m4 10v-3M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>@endif
+                    {{ $item['label'] }}
+                </a>
+            @endif
+        @endforeach
+    </nav>
+    <div class="shrink-0 border-t border-white/10 p-4">
+        <div class="mb-3 flex items-center gap-3 px-2"><span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-sm font-bold">{{ mb_strtoupper(mb_substr(Auth::user()->name, 0, 1)) }}</span><div class="min-w-0"><p class="truncate text-sm font-semibold">{{ Auth::user()->name }}</p><p class="truncate text-xs text-slate-400">{{ Auth::user()->roles->pluck('name')->map(fn ($role) => __($role))->join(', ') }}</p></div></div>
+        <div class="grid grid-cols-2 gap-2"><a href="{{ route('profile.edit') }}" class="rounded-lg bg-white/5 px-3 py-2 text-center text-xs font-medium text-slate-300 hover:bg-white/10">{{ __('Profile') }}</a><form method="POST" action="{{ route('logout') }}">@csrf<button class="w-full rounded-lg bg-white/5 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-white/10">{{ __('Log Out') }}</button></form></div>
+        <div class="mt-3 sm:hidden">@include('partials.locale-switcher')</div>
     </div>
-</nav>
+</aside>
