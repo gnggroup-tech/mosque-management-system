@@ -2,7 +2,7 @@
 
 This runbook is intentionally independent of a hosting provider. Adapt service management, release switching, TLS, database connectivity and filesystem ownership to the approved infrastructure without storing credentials in the repository or command history.
 
-TASK-034B secures release preparation and RBAC seeding. It does not configure SMTP, queue workers, the scheduler, automated or off-site backups, monitoring, alerting, invoices, or continuous deployment.
+TASK-034B secures release preparation and RBAC seeding. Queue and scheduler operation plus daily private-disk backups are documented by TASK-034C4 in `docs/scheduled-operations.md`; provider-specific supervision, real SMTP, off-site backups, monitoring, alerting, invoices and continuous deployment remain deployment responsibilities.
 
 ## Mandatory release prerequisites
 
@@ -248,10 +248,9 @@ Never restore a version 1 archive with the version 2 command, reuse an old invit
 The following remain unresolved and are not configured by this task:
 
 - SMTP credentials, provider delivery verification and bounce handling;
-- deployment-specific worker supervision and alert thresholds; follow the
-  provider-independent TASK-034C1 procedure in `docs/queued-invitations.md`;
-- scheduler execution;
-- scheduled backups and encrypted off-site replication;
+- deployment-specific worker and scheduler supervision and alert thresholds; follow
+  `docs/queued-invitations.md` and `docs/scheduled-operations.md`;
+- encrypted off-site backup replication;
 - monitoring, readiness probes, metrics, alerting and incident notification.
 
 Production readiness must not be claimed until each blocker has an implemented, tested and approved operational solution or a formally accepted risk treatment.

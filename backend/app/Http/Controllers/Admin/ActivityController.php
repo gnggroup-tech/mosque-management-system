@@ -9,6 +9,7 @@ use App\Models\Activity;
 use App\Models\ActivityRegistration;
 use App\Models\Mosque;
 use App\Models\User;
+use App\Services\ActivityNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -52,19 +53,17 @@ class ActivityController extends Controller
         return response()->json($activity->load(['mosque:id,code,name', 'registrations.user:id,name,email']));
     }
 
-    public function update(UpdateActivityRequest $request, Activity $activity): JsonResponse
-    {
+    public function update(
+        UpdateActivityRequest $request,
+        Activity $activity,
+        ActivityNotificationService $notificationService,
+    ): JsonResponse {
         $this->ensureMosqueManageable($request->user(), $activity->mosque_id);
-        abort_if(in_array($activity->status, ['cancelled', 'completed'], true), 422, 'Cette activité ne peut plus être modifiée.');
         $data = $request->validated();
         $mosqueId = (int) ($data['mosque_id'] ?? $activity->mosque_id);
         $this->ensureMosqueManageable($request->user(), $mosqueId);
-        if (array_key_exists('capacity', $data) && $data['capacity'] !== null) {
-            abort_if($activity->registrations()->count() > $data['capacity'], 422, __('The capacity is lower than the number of registrations.'));
-        }
-        $activity->update($data);
 
-        return response()->json($activity->fresh()->load('mosque:id,code,name'));
+        return response()->json($notificationService->update($activity, $data)->load('mosque:id,code,name'));
     }
 
     public function publish(Request $request, Activity $activity): JsonResponse
@@ -76,13 +75,14 @@ class ActivityController extends Controller
         return response()->json($activity->fresh());
     }
 
-    public function cancel(Request $request, Activity $activity): JsonResponse
-    {
+    public function cancel(
+        Request $request,
+        Activity $activity,
+        ActivityNotificationService $notificationService,
+    ): JsonResponse {
         $this->ensureMosqueManageable($request->user(), $activity->mosque_id);
-        abort_unless(in_array($activity->status, ['draft', 'published'], true), 422);
-        $activity->update(['status' => 'cancelled']);
 
-        return response()->json($activity->fresh());
+        return response()->json($notificationService->cancel($activity));
     }
 
     public function register(Request $request, Activity $activity): JsonResponse

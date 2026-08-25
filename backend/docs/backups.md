@@ -18,7 +18,7 @@ Keep `SGAR_BACKUP_DISK=backups` unless an equivalent private Laravel filesystem 
 
 `SGAR_BACKUP_RETENTION_DAYS` controls retention and defaults to 30 days. The archive encryption key is the application's `APP_KEY`. Never put that key in the repository, filename, command output, audit metadata, or the same storage location as the backup.
 
-Copy verified archives to encrypted off-site storage using infrastructure credentials that are not stored in this repository. TASK-034A does not schedule backups; creation remains an explicit operator action.
+Copy verified archives to encrypted off-site storage using infrastructure credentials that are not stored in this repository. TASK-034C4 schedules local private-disk creation daily at `SGAR_BACKUP_SCHEDULE_TIME` (`02:00` by default); off-site replication remains an explicit operator responsibility.
 
 ## Creation
 
@@ -50,7 +50,7 @@ The order in `config/backup.php` is part of the authenticated manifest and is al
 3. `mosques`, `mosque_user`, `user_invitations`;
 4. `mosque_councils`, `council_members`, `faithful`;
 5. `donations`, Zakat tables, Waqf tables, `subsidies`, `expenses`;
-6. `activities`, `activity_registrations`;
+6. `activities`, `activity_registrations`, `activity_notification_deliveries`;
 7. `announcements`, `announcement_receipts`;
 8. council meetings, participants and decisions;
 9. `audit_logs`.

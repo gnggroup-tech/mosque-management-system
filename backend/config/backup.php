@@ -24,6 +24,7 @@ $restoreOrder = [
     'expenses',
     'activities',
     'activity_registrations',
+    'activity_notification_deliveries',
     'announcements',
     'announcement_receipts',
     'council_meetings',
@@ -35,6 +36,7 @@ $restoreOrder = [
 return [
     'disk' => env('SGAR_BACKUP_DISK', 'backups'),
     'retention_days' => (int) env('SGAR_BACKUP_RETENTION_DAYS', 30),
+    'schedule_time' => env('SGAR_BACKUP_SCHEDULE_TIME', '02:00'),
     'application_version' => env('APP_VERSION'),
     'tables' => $restoreOrder,
     'required_tables' => $restoreOrder,

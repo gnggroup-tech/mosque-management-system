@@ -180,5 +180,15 @@
     "This meeting cannot be convened in its current status.": "Cette réunion ne peut pas être convoquée dans son statut actuel.",
     "Participant :id is ineligible for the notice (:reason).": "Le participant :id n’est pas éligible à la convocation (:reason).",
     "No selected participant is eligible for an e-mail notice.": "Aucun participant sélectionné n’est éligible à une convocation par e-mail.",
-    "This announcement cannot be published in its current status.": "Cette annonce ne peut pas être publiée dans son statut actuel."
+    "This announcement cannot be published in its current status.": "Cette annonce ne peut pas être publiée dans son statut actuel.",
+    "Activity reminder": "Rappel d’activité",
+    "Activity schedule updated": "Horaire de l’activité modifié",
+    "Activity cancelled": "Activité annulée",
+    "The schedule or location of the activity \":title\" has changed.": "L’horaire ou le lieu de l’activité « :title » a changé.",
+    "The activity \":title\" has been cancelled.": "L’activité « :title » a été annulée.",
+    "Reminder: the activity \":title\" starts within 24 hours.": "Rappel : l’activité « :title » commence dans moins de 24 heures.",
+    "This message is an application notice; it is not a delivery or reading receipt.": "Ce message est un avis applicatif ; il ne constitue pas une preuve de livraison ou de lecture.",
+    "Activity reminder batches queued: :count": "Lots de rappels d’activité mis en file : :count",
+    "This activity can no longer be changed.": "Cette activité ne peut plus être modifiée.",
+    "This activity cannot be cancelled in its current status.": "Cette activité ne peut pas être annulée dans son statut actuel."
 }
