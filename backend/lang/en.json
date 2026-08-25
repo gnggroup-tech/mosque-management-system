@@ -180,5 +180,15 @@
     "This meeting cannot be convened in its current status.": "This meeting cannot be convened in its current status.",
     "Participant :id is ineligible for the notice (:reason).": "Participant :id is ineligible for the notice (:reason).",
     "No selected participant is eligible for an e-mail notice.": "No selected participant is eligible for an e-mail notice.",
-    "This announcement cannot be published in its current status.": "This announcement cannot be published in its current status."
+    "This announcement cannot be published in its current status.": "This announcement cannot be published in its current status.",
+    "Activity reminder": "Activity reminder",
+    "Activity schedule updated": "Activity schedule updated",
+    "Activity cancelled": "Activity cancelled",
+    "The schedule or location of the activity \":title\" has changed.": "The schedule or location of the activity \":title\" has changed.",
+    "The activity \":title\" has been cancelled.": "The activity \":title\" has been cancelled.",
+    "Reminder: the activity \":title\" starts within 24 hours.": "Reminder: the activity \":title\" starts within 24 hours.",
+    "This message is an application notice; it is not a delivery or reading receipt.": "This message is an application notice; it is not a delivery or reading receipt.",
+    "Activity reminder batches queued: :count": "Activity reminder batches queued: :count",
+    "This activity can no longer be changed.": "This activity can no longer be changed.",
+    "This activity cannot be cancelled in its current status.": "This activity cannot be cancelled in its current status."
 }
