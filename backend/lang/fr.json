@@ -179,5 +179,6 @@
     "This message confirms the meeting notice only; it is not a delivery or reading receipt.": "Ce message confirme uniquement la convocation ; il ne constitue pas une preuve de livraison ou de lecture.",
     "This meeting cannot be convened in its current status.": "Cette réunion ne peut pas être convoquée dans son statut actuel.",
     "Participant :id is ineligible for the notice (:reason).": "Le participant :id n’est pas éligible à la convocation (:reason).",
-    "No selected participant is eligible for an e-mail notice.": "Aucun participant sélectionné n’est éligible à une convocation par e-mail."
+    "No selected participant is eligible for an e-mail notice.": "Aucun participant sélectionné n’est éligible à une convocation par e-mail.",
+    "This announcement cannot be published in its current status.": "Cette annonce ne peut pas être publiée dans son statut actuel."
 }

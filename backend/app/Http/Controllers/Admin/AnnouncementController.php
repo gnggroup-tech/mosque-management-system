@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\AccountStatus;
-use App\Enums\MosqueMembershipType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Announcement\StoreAnnouncementRequest;
 use App\Http\Requests\Announcement\UpdateAnnouncementRequest;
@@ -11,11 +9,10 @@ use App\Models\Announcement;
 use App\Models\AnnouncementReceipt;
 use App\Models\Mosque;
 use App\Models\User;
+use App\Services\AnnouncementDistributionService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class AnnouncementController extends Controller
 {
@@ -63,21 +60,14 @@ class AnnouncementController extends Controller
         return response()->json($announcement->fresh());
     }
 
-    public function publish(Request $request, Announcement $announcement): JsonResponse
-    {
+    public function publish(
+        Request $request,
+        Announcement $announcement,
+        AnnouncementDistributionService $distributionService,
+    ): JsonResponse {
         $this->ensureScopeManageable($request->user(), $announcement->mosque_id);
-        abort_unless($announcement->status === 'draft', 422, 'Cette annonce a déjà été traitée.');
-        DB::transaction(function () use ($announcement): void {
-            $locked = Announcement::query()->lockForUpdate()->findOrFail($announcement->id);
-            abort_unless($locked->status === 'draft', 422, 'Cette annonce a déjà été traitée.');
-            $locked->update(['status' => 'published', 'published_at' => now(), 'visible_from' => $locked->visible_from ?? now()]);
-            $this->recipients($locked)->each(fn (User $user) => AnnouncementReceipt::query()->firstOrCreate(
-                ['announcement_id' => $locked->id, 'user_id' => $user->id],
-                ['delivered_at' => now()]
-            ));
-        });
 
-        return response()->json($announcement->fresh()->loadCount('receipts'));
+        return response()->json($distributionService->publish($announcement));
     }
 
     public function markRead(Request $request, Announcement $announcement): JsonResponse
@@ -115,30 +105,6 @@ class AnnouncementController extends Controller
         }
 
         return Announcement::query()->whereRaw('1 = 0');
-    }
-
-    private function recipients(Announcement $announcement): Collection
-    {
-        $query = User::query();
-        if ($announcement->mosque_id !== null) {
-            $mosqueId = $announcement->mosque_id;
-            $query->where(fn (Builder $recipients) => $recipients
-                ->where(fn (Builder $administrators) => $administrators
-                    ->where('status', AccountStatus::Active->value)
-                    ->whereHas('roles', fn (Builder $roles) => $roles->where('name', 'admin'))
-                    ->whereHas('mosqueMemberships', fn (Builder $memberships) => $memberships
-                        ->where('mosque_id', $mosqueId)
-                        ->where('membership_type', MosqueMembershipType::Administrator->value)))
-                ->orWhereHas('faithfulRecords', fn (Builder $faithful) => $faithful->where('mosque_id', $mosqueId)));
-        }
-        if ($announcement->audience === 'administrators') {
-            $query->role(['superadmin', 'admin']);
-        }
-        if ($announcement->audience === 'faithful') {
-            $query->role('user');
-        }
-
-        return $query->get();
     }
 
     private function ensureScopeManageable(User $user, ?int $mosqueId): void
