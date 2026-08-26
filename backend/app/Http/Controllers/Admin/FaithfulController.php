@@ -10,11 +10,13 @@ use App\Models\Mosque;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class FaithfulController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse|View
     {
         $records = $this->visibleTo($request->user())
             ->with('mosque:id,code,name')
@@ -29,27 +31,62 @@ class FaithfulController extends Controller
             ->orderBy('last_name')->orderBy('first_name')
             ->paginate(min(max($request->integer('per_page', 20), 1), 100));
 
-        return response()->json($records);
+        if ($request->expectsJson()) {
+            return response()->json($records);
+        }
+
+        return view('admin.faithful.index', [
+            'records' => $records->withQueryString(),
+            'mosques' => $this->mosquesVisibleTo($request->user())->select(['id', 'name'])->orderBy('name')->get(),
+            'filters' => $request->only(['search', 'mosque_id', 'status']),
+        ]);
     }
 
-    public function store(StoreFaithfulRequest $request): JsonResponse
+    public function create(Request $request): View
+    {
+        return view('admin.faithful.create', [
+            'mosques' => Mosque::query()->administrableBy($request->user())->select(['id', 'name'])->orderBy('name')->get(),
+        ]);
+    }
+
+    public function store(StoreFaithfulRequest $request): JsonResponse|RedirectResponse
     {
         $data = $request->validated();
         $this->ensureMosqueManageable($request->user(), (int) $data['mosque_id']);
         $data['created_by'] = $request->user()->getKey();
         $faithful = Faithful::query()->create($data);
 
-        return response()->json($faithful->load('mosque:id,code,name'), 201);
+        if ($request->expectsJson()) {
+            return response()->json($faithful->load('mosque:id,code,name'), 201);
+        }
+
+        return redirect()->route('admin.faithful.show', $faithful)->with('success', __('Faithful record created successfully.'));
     }
 
-    public function show(Request $request, Faithful $faithful): JsonResponse
+    public function show(Request $request, Faithful $faithful): JsonResponse|View
     {
         abort_unless($this->visibleTo($request->user())->whereKey($faithful)->exists(), 403);
 
-        return response()->json($faithful->load('mosque:id,code,name'));
+        $faithful->load('mosque:id,code,name');
+
+        if ($request->expectsJson()) {
+            return response()->json($faithful);
+        }
+
+        return view('admin.faithful.show', ['faithful' => $faithful]);
     }
 
-    public function update(UpdateFaithfulRequest $request, Faithful $faithful): JsonResponse
+    public function edit(Request $request, Faithful $faithful): View
+    {
+        $this->ensureMosqueManageable($request->user(), $faithful->mosque_id);
+
+        return view('admin.faithful.edit', [
+            'faithful' => $faithful,
+            'mosques' => Mosque::query()->administrableBy($request->user())->select(['id', 'name'])->orderBy('name')->get(),
+        ]);
+    }
+
+    public function update(UpdateFaithfulRequest $request, Faithful $faithful): JsonResponse|RedirectResponse
     {
         $this->ensureMosqueManageable($request->user(), $faithful->mosque_id);
         $data = $request->validated();
@@ -58,7 +95,13 @@ class FaithfulController extends Controller
         }
         $faithful->update($data);
 
-        return response()->json($faithful->fresh()->load('mosque:id,code,name'));
+        $faithful = $faithful->fresh()->load('mosque:id,code,name');
+
+        if ($request->expectsJson()) {
+            return response()->json($faithful);
+        }
+
+        return redirect()->route('admin.faithful.show', $faithful)->with('success', __('Faithful record updated successfully.'));
     }
 
     public function destroy(Request $request, Faithful $faithful): JsonResponse
@@ -85,6 +128,15 @@ class FaithfulController extends Controller
         }
 
         return Faithful::query()->whereRaw('1 = 0');
+    }
+
+    private function mosquesVisibleTo(User $user): Builder
+    {
+        if ($user->hasRole('user')) {
+            return Mosque::query()->whereHas('faithful', fn (Builder $faithful) => $faithful->where('user_id', $user->id));
+        }
+
+        return Mosque::query()->administrableBy($user);
     }
 
     private function ensureMosqueManageable(User $user, int $mosqueId): void

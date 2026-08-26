@@ -12,11 +12,13 @@ use App\Models\User;
 use App\Services\AnnouncementDistributionService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class AnnouncementController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse|View
     {
         $items = $this->visibleTo($request->user())
             ->with('mosque:id,code,name')->withCount('receipts')
@@ -29,27 +31,71 @@ class AnnouncementController extends Controller
             ->orderByDesc('published_at')->orderByDesc('id')
             ->paginate(min(max($request->integer('per_page', 20), 1), 100));
 
-        return response()->json($items);
+        if ($request->expectsJson()) {
+            return response()->json($items);
+        }
+
+        $items->getCollection()->load(['receipts' => fn ($receipts) => $receipts->where('user_id', $request->user()->id)]);
+
+        return view('admin.announcements.index', [
+            'announcements' => $items->withQueryString(),
+            'filters' => $request->only(['search', 'type', 'priority']),
+        ]);
     }
 
-    public function store(StoreAnnouncementRequest $request): JsonResponse
+    public function create(Request $request): View
+    {
+        return view('admin.announcements.create', [
+            'mosques' => Mosque::query()->administrableBy($request->user())->select(['id', 'name'])->orderBy('name')->get(),
+            'canPublishNationally' => $request->user()->hasRole('superadmin'),
+        ]);
+    }
+
+    public function store(StoreAnnouncementRequest $request): JsonResponse|RedirectResponse
     {
         $data = $request->validated();
         $this->ensureScopeManageable($request->user(), $data['mosque_id'] ?? null);
         $data['created_by'] = $request->user()->id;
         $data['status'] = 'draft';
 
-        return response()->json(Announcement::query()->create($data), 201);
+        $announcement = Announcement::query()->create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json($announcement, 201);
+        }
+
+        return redirect()->route('admin.announcements.show', $announcement)->with('success', __('Announcement draft created successfully.'));
     }
 
-    public function show(Request $request, Announcement $announcement): JsonResponse
+    public function show(Request $request, Announcement $announcement): JsonResponse|View
     {
         abort_unless($this->visibleTo($request->user())->whereKey($announcement)->exists(), 403);
 
-        return response()->json($announcement->load('mosque:id,code,name'));
+        $announcement->load('mosque:id,code,name');
+
+        if ($request->expectsJson()) {
+            return response()->json($announcement);
+        }
+
+        return view('admin.announcements.show', [
+            'announcement' => $announcement,
+            'receipt' => $announcement->receipts()->where('user_id', $request->user()->id)->first(),
+        ]);
     }
 
-    public function update(UpdateAnnouncementRequest $request, Announcement $announcement): JsonResponse
+    public function edit(Request $request, Announcement $announcement): View
+    {
+        $this->ensureScopeManageable($request->user(), $announcement->mosque_id);
+        abort_unless($announcement->status === 'draft', 422, __('Only draft announcements can be edited.'));
+
+        return view('admin.announcements.edit', [
+            'announcement' => $announcement,
+            'mosques' => Mosque::query()->administrableBy($request->user())->select(['id', 'name'])->orderBy('name')->get(),
+            'canPublishNationally' => $request->user()->hasRole('superadmin'),
+        ]);
+    }
+
+    public function update(UpdateAnnouncementRequest $request, Announcement $announcement): JsonResponse|RedirectResponse
     {
         $this->ensureScopeManageable($request->user(), $announcement->mosque_id);
         abort_unless($announcement->status === 'draft', 422, 'Seule une annonce en brouillon peut être modifiée.');
@@ -57,25 +103,39 @@ class AnnouncementController extends Controller
         $this->ensureScopeManageable($request->user(), $data['mosque_id'] ?? $announcement->mosque_id);
         $announcement->update($data);
 
-        return response()->json($announcement->fresh());
+        if ($request->expectsJson()) {
+            return response()->json($announcement->fresh());
+        }
+
+        return redirect()->route('admin.announcements.show', $announcement)->with('success', __('Announcement updated successfully.'));
     }
 
     public function publish(
         Request $request,
         Announcement $announcement,
         AnnouncementDistributionService $distributionService,
-    ): JsonResponse {
+    ): JsonResponse|RedirectResponse {
         $this->ensureScopeManageable($request->user(), $announcement->mosque_id);
 
-        return response()->json($distributionService->publish($announcement));
+        $announcement = $distributionService->publish($announcement);
+
+        if ($request->expectsJson()) {
+            return response()->json($announcement);
+        }
+
+        return redirect()->route('admin.announcements.show', $announcement)->with('success', __('Announcement published internally.'));
     }
 
-    public function markRead(Request $request, Announcement $announcement): JsonResponse
+    public function markRead(Request $request, Announcement $announcement): JsonResponse|RedirectResponse
     {
         $receipt = AnnouncementReceipt::query()->whereBelongsTo($announcement)->where('user_id', $request->user()->id)->firstOrFail();
         $receipt->update(['read_at' => $receipt->read_at ?? now()]);
 
-        return response()->json($receipt->fresh());
+        if ($request->expectsJson()) {
+            return response()->json($receipt->fresh());
+        }
+
+        return redirect()->route('admin.announcements.show', $announcement)->with('success', __('Announcement marked as read.'));
     }
 
     public function destroy(Request $request, Announcement $announcement): JsonResponse
