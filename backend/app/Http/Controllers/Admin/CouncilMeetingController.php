@@ -12,22 +12,45 @@ use App\Models\User;
 use App\Services\CouncilMeetingNoticeService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class CouncilMeetingController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse|View
     {
-        return response()->json($this->visibleTo($request->user())
+        $meetings = $this->visibleTo($request->user())
             ->with('council.mosque:id,code,name')->withCount(['participants', 'decisions'])
             ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
             ->when($request->filled('council_id'), fn (Builder $q) => $q->where('mosque_council_id', $request->integer('council_id')))
-            ->orderByDesc('scheduled_at')->paginate(min(max($request->integer('per_page', 20), 1), 100)));
+            ->orderByDesc('scheduled_at')->paginate(min(max($request->integer('per_page', 20), 1), 100));
+
+        if ($request->expectsJson()) {
+            return response()->json($meetings);
+        }
+
+        return view('admin.council-meetings.index', [
+            'meetings' => $meetings->withQueryString(),
+            'councils' => $this->manageableCouncils($request->user())->select(['id', 'name'])->orderBy('name')->get(),
+            'filters' => $request->only(['status', 'council_id']),
+        ]);
     }
 
-    public function store(StoreCouncilMeetingRequest $request): JsonResponse
+    public function create(Request $request): View
+    {
+        $councils = $this->manageableCouncils($request->user())
+            ->where('status', 'active')
+            ->with(['members' => fn (Builder $members) => $members->where('status', 'active')->with('user:id,name')])
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.council-meetings.create', ['councils' => $councils]);
+    }
+
+    public function store(StoreCouncilMeetingRequest $request): JsonResponse|RedirectResponse
     {
         $data = $request->validated();
         $participantIds = $data['participant_ids'];
@@ -46,32 +69,43 @@ class CouncilMeetingController extends Controller
             return $meeting;
         });
 
-        return response()->json($meeting->load('participants.member.user:id,name,email'), 201);
+        if ($request->expectsJson()) {
+            return response()->json($meeting->load('participants.member.user:id,name,email'), 201);
+        }
+
+        return redirect()->route('admin.council-meetings.show', $meeting)->with('success', __('Meeting created successfully.'));
     }
 
-    public function show(Request $request, CouncilMeeting $meeting): JsonResponse
+    public function show(Request $request, CouncilMeeting $meeting): JsonResponse|View
     {
         abort_unless($this->visibleTo($request->user())->whereKey($meeting)->exists(), 403);
 
-        return response()->json($meeting->load(['council.mosque:id,code,name', 'participants.member.user:id,name,email', 'decisions.responsible:id,name,email']));
+        $meeting->load(['council.mosque:id,code,name', 'participants.member.user:id,name,email', 'decisions.responsible:id,name,email']);
+
+        if ($request->expectsJson()) {
+            return response()->json($meeting);
+        }
+
+        return view('admin.council-meetings.show', ['meeting' => $meeting]);
     }
 
     public function sendNotice(
         Request $request,
         CouncilMeeting $meeting,
         CouncilMeetingNoticeService $noticeService,
-    ): JsonResponse {
+    ): JsonResponse|RedirectResponse {
         $this->ensureMeetingManageable($request->user(), $meeting);
 
         $summary = $noticeService->queue($meeting);
 
-        return response()->json([
-            ...$meeting->fresh()->toArray(),
-            'notice_summary' => $summary,
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([...$meeting->fresh()->toArray(), 'notice_summary' => $summary]);
+        }
+
+        return redirect()->route('admin.council-meetings.show', $meeting)->with('success', __('Council notice queued for :count participants.', ['count' => $summary['queued_count'] ?? 0]));
     }
 
-    public function recordAttendance(Request $request, CouncilMeeting $meeting): JsonResponse
+    public function recordAttendance(Request $request, CouncilMeeting $meeting): JsonResponse|RedirectResponse
     {
         $this->ensureMeetingManageable($request->user(), $meeting);
         $data = $request->validate(['participants' => ['required', 'array'], 'participants.*.id' => ['required', 'integer'], 'participants.*.status' => ['required', 'in:present,absent,excused']]);
@@ -80,10 +114,14 @@ class CouncilMeetingController extends Controller
             abort_if($updated === 0, 422, 'Participant invalide.');
         }
 
-        return response()->json($meeting->fresh()->load('participants'));
+        if ($request->expectsJson()) {
+            return response()->json($meeting->fresh()->load('participants'));
+        }
+
+        return redirect()->route('admin.council-meetings.show', $meeting)->with('success', __('Attendance saved successfully.'));
     }
 
-    public function close(Request $request, CouncilMeeting $meeting): JsonResponse
+    public function close(Request $request, CouncilMeeting $meeting): JsonResponse|RedirectResponse
     {
         $this->ensureMeetingManageable($request->user(), $meeting);
         $data = $request->validate(['minutes' => ['required', 'string', 'max:30000']]);
@@ -91,10 +129,14 @@ class CouncilMeetingController extends Controller
         abort_if($meeting->participants()->where('attendance_status', 'present')->count() < $meeting->quorum_required, 422, 'Le quorum n’est pas atteint.');
         $meeting->update(['status' => 'completed', 'minutes' => $data['minutes'], 'held_at' => now()]);
 
-        return response()->json($meeting->fresh());
+        if ($request->expectsJson()) {
+            return response()->json($meeting->fresh());
+        }
+
+        return redirect()->route('admin.council-meetings.show', $meeting)->with('success', __('Meeting minutes closed successfully.'));
     }
 
-    public function addDecision(StoreCouncilDecisionRequest $request, CouncilMeeting $meeting): JsonResponse
+    public function addDecision(StoreCouncilDecisionRequest $request, CouncilMeeting $meeting): JsonResponse|RedirectResponse
     {
         $this->ensureMeetingManageable($request->user(), $meeting);
         abort_unless($meeting->status === 'completed', 422, 'Le procès-verbal doit être clôturé avant les décisions.');
@@ -103,7 +145,13 @@ class CouncilMeetingController extends Controller
         abort_if($present < $data['votes_for'] + $data['votes_against'] + $data['abstentions'], 422, 'Le nombre de votes dépasse les présences.');
         $data['reference'] = 'DEC-'.$meeting->id.'-'.Str::upper(Str::random(8));
 
-        return response()->json($meeting->decisions()->create($data), 201);
+        $decision = $meeting->decisions()->create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json($decision, 201);
+        }
+
+        return redirect()->route('admin.council-meetings.show', $meeting)->with('success', __('Decision recorded successfully.'));
     }
 
     private function visibleTo(User $user): Builder
@@ -121,6 +169,15 @@ class CouncilMeetingController extends Controller
         }
 
         return CouncilMeeting::query()->whereRaw('1 = 0');
+    }
+
+    private function manageableCouncils(User $user): Builder
+    {
+        if ($user->hasRole('superadmin')) {
+            return MosqueCouncil::query();
+        }
+
+        return MosqueCouncil::query()->whereHas('mosque', fn (Builder $mosques) => $mosques->administrableBy($user));
     }
 
     private function ensureMeetingManageable(User $user, CouncilMeeting $meeting): void

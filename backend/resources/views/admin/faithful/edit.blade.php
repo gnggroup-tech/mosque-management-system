@@ -1,0 +1,1 @@
+<x-app-layout><x-slot name="header"><h1 class="text-lg font-bold">{{ __('Edit faithful') }}</h1></x-slot><div class="mx-auto max-w-4xl px-4 py-8 sm:px-6">@include('admin.faithful.partials.form',['faithful'=>$faithful])</div></x-app-layout>

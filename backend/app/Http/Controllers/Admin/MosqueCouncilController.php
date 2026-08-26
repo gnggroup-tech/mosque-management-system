@@ -10,13 +10,15 @@ use App\Models\MosqueCouncil;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class MosqueCouncilController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse|View
     {
         $councils = $this->visibleTo($request->user())
             ->with(['mosque:id,code,name,admin_id', 'creator:id,name,email'])
@@ -29,10 +31,25 @@ class MosqueCouncilController extends Controller
             ->orderByDesc('mandate_start')
             ->paginate(min(max($request->integer('per_page', 20), 1), 100));
 
-        return response()->json($councils);
+        if ($request->expectsJson()) {
+            return response()->json($councils);
+        }
+
+        return view('admin.councils.index', [
+            'councils' => $councils->withQueryString(),
+            'mosques' => Mosque::query()->administrableBy($request->user())->select(['id', 'name'])->orderBy('name')->get(),
+            'filters' => $request->only(['search', 'mosque_id', 'status']),
+        ]);
     }
 
-    public function store(StoreMosqueCouncilRequest $request): JsonResponse
+    public function create(Request $request): View
+    {
+        return view('admin.councils.create', [
+            'mosques' => Mosque::query()->administrableBy($request->user())->select(['id', 'name'])->orderBy('name')->get(),
+        ]);
+    }
+
+    public function store(StoreMosqueCouncilRequest $request): JsonResponse|RedirectResponse
     {
         $data = $request->validated();
         $mosque = Mosque::query()->findOrFail($data['mosque_id']);
@@ -45,17 +62,38 @@ class MosqueCouncilController extends Controller
             return MosqueCouncil::query()->create($data);
         });
 
-        return response()->json($council->load(['mosque:id,code,name,admin_id', 'creator:id,name,email']), 201);
+        if ($request->expectsJson()) {
+            return response()->json($council->load(['mosque:id,code,name,admin_id', 'creator:id,name,email']), 201);
+        }
+
+        return redirect()->route('admin.councils.show', $council)->with('success', __('Council created successfully.'));
     }
 
-    public function show(Request $request, MosqueCouncil $council): JsonResponse
+    public function show(Request $request, MosqueCouncil $council): JsonResponse|View
     {
         $this->ensureVisible($request->user(), $council);
 
-        return response()->json($council->load(['mosque:id,code,name,admin_id', 'creator:id,name,email']));
+        if ($request->expectsJson()) {
+            return response()->json($council->load(['mosque:id,code,name,admin_id', 'creator:id,name,email']));
+        }
+
+        $council->load([
+            'mosque:id,code,name,admin_id',
+            'members' => fn ($members) => $members->with('user:id,name')->orderByDesc('started_at'),
+            'meetings' => fn ($meetings) => $meetings->withCount(['participants', 'decisions'])->orderByDesc('scheduled_at'),
+        ]);
+
+        return view('admin.councils.show', ['council' => $council]);
     }
 
-    public function update(UpdateMosqueCouncilRequest $request, MosqueCouncil $council): JsonResponse
+    public function edit(Request $request, MosqueCouncil $council): View
+    {
+        $this->ensureManageable($request->user(), $council);
+
+        return view('admin.councils.edit', ['council' => $council]);
+    }
+
+    public function update(UpdateMosqueCouncilRequest $request, MosqueCouncil $council): JsonResponse|RedirectResponse
     {
         $this->ensureManageable($request->user(), $council);
         $data = $request->validated();
@@ -69,7 +107,13 @@ class MosqueCouncilController extends Controller
             $council->update($data);
         });
 
-        return response()->json($council->fresh()->load(['mosque:id,code,name,admin_id', 'creator:id,name,email']));
+        $council = $council->fresh()->load(['mosque:id,code,name,admin_id', 'creator:id,name,email']);
+
+        if ($request->expectsJson()) {
+            return response()->json($council);
+        }
+
+        return redirect()->route('admin.councils.show', $council)->with('success', __('Council updated successfully.'));
     }
 
     public function destroy(Request $request, MosqueCouncil $council): JsonResponse
