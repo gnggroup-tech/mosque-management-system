@@ -9,15 +9,17 @@ use App\Models\Donation;
 use App\Models\Faithful;
 use App\Models\Mosque;
 use App\Models\User;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class DonationController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse|View
     {
         $donations = $this->visibleTo($request->user())
             ->with(['mosque:id,code,name', 'faithful:id,registration_number,first_name,last_name'])
@@ -34,10 +36,29 @@ class DonationController extends Controller
             ->latest('received_at')
             ->paginate(min(max($request->integer('per_page', 20), 1), 100));
 
-        return response()->json($donations);
+        if ($request->expectsJson()) {
+            return response()->json($donations);
+        }
+
+        return view('admin.donations.index', [
+            'donations' => $donations->withQueryString(),
+            'mosques' => $this->manageableMosques($request->user())->get(['id', 'name']),
+            'filters' => $request->only(['search', 'mosque_id', 'status', 'contribution_type', 'from', 'to']),
+        ]);
     }
 
-    public function store(StoreDonationRequest $request): JsonResponse
+    public function create(Request $request): View
+    {
+        $mosques = $this->manageableMosques($request->user())->get(['id', 'name']);
+
+        return view('admin.donations.create', [
+            'mosques' => $mosques,
+            'faithful' => Faithful::query()->whereIn('mosque_id', $mosques->pluck('id'))
+                ->where('status', 'active')->orderBy('first_name')->get(['id', 'mosque_id', 'registration_number', 'first_name', 'last_name']),
+        ]);
+    }
+
+    public function store(StoreDonationRequest $request): JsonResponse|RedirectResponse
     {
         $data = $request->validated();
         $this->ensureMosqueManageable($request->user(), (int) $data['mosque_id']);
@@ -45,8 +66,9 @@ class DonationController extends Controller
         $data['created_by'] = $request->user()->getKey();
         $data['receipt_number'] = $this->newReceiptNumber();
         $data['status'] = 'pending';
+        $data['is_anonymous'] = $request->boolean('is_anonymous');
 
-        if (($data['is_anonymous'] ?? false) === true) {
+        if ($data['is_anonymous']) {
             $data['faithful_id'] = null;
             $data['donor_name'] = null;
             $data['donor_phone'] = null;
@@ -55,14 +77,25 @@ class DonationController extends Controller
 
         $donation = Donation::query()->create($data);
 
-        return response()->json($donation->load('mosque:id,code,name'), 201);
+        if ($request->expectsJson()) {
+            return response()->json($donation->load('mosque:id,code,name'), 201);
+        }
+
+        return redirect()->route('admin.donations.show', $donation)
+            ->with('success', __('Contribution recorded. Receipt reference: :number', ['number' => $donation->receipt_number]));
     }
 
-    public function show(Request $request, Donation $donation): JsonResponse
+    public function show(Request $request, Donation $donation): JsonResponse|View
     {
         abort_unless($this->visibleTo($request->user())->whereKey($donation)->exists(), 403);
 
-        return response()->json($donation->load(['mosque:id,code,name', 'faithful:id,registration_number,first_name,last_name']));
+        $donation->load(['mosque:id,code,name', 'faithful:id,registration_number,first_name,last_name']);
+
+        if ($request->expectsJson()) {
+            return response()->json($donation);
+        }
+
+        return view('admin.donations.show', ['donation' => $donation]);
     }
 
     public function update(UpdateDonationRequest $request, Donation $donation): JsonResponse
@@ -71,6 +104,9 @@ class DonationController extends Controller
         abort_if($donation->status !== 'pending', 422, 'Une contribution validée ou rejetée ne peut plus être modifiée.');
 
         $data = $request->validated();
+        if (array_key_exists('is_anonymous', $data)) {
+            $data['is_anonymous'] = $request->boolean('is_anonymous');
+        }
         $mosqueId = (int) ($data['mosque_id'] ?? $donation->mosque_id);
         $this->ensureMosqueManageable($request->user(), $mosqueId);
         $this->ensureFaithfulBelongsToMosque($data['faithful_id'] ?? $donation->faithful_id, $mosqueId);
@@ -87,7 +123,7 @@ class DonationController extends Controller
         return response()->json($donation->fresh()->load('mosque:id,code,name'));
     }
 
-    public function validateDonation(Request $request, Donation $donation): JsonResponse
+    public function validateDonation(Request $request, Donation $donation): JsonResponse|RedirectResponse
     {
         $this->ensureMosqueManageable($request->user(), $donation->mosque_id);
         abort_if($donation->status !== 'pending', 422, 'Cette contribution a déjà été traitée.');
@@ -102,10 +138,14 @@ class DonationController extends Controller
             ]);
         });
 
-        return response()->json($donation->fresh());
+        if ($request->expectsJson()) {
+            return response()->json($donation->fresh());
+        }
+
+        return redirect()->route('admin.donations.show', $donation)->with('success', __('Contribution validated.'));
     }
 
-    public function reject(Request $request, Donation $donation): JsonResponse
+    public function reject(Request $request, Donation $donation): JsonResponse|RedirectResponse
     {
         $this->ensureMosqueManageable($request->user(), $donation->mosque_id);
         abort_if($donation->status !== 'pending', 422, 'Cette contribution a déjà été traitée.');
@@ -121,7 +161,11 @@ class DonationController extends Controller
             ]);
         });
 
-        return response()->json($donation->fresh());
+        if ($request->expectsJson()) {
+            return response()->json($donation->fresh());
+        }
+
+        return redirect()->route('admin.donations.show', $donation)->with('success', __('Contribution rejected.'));
     }
 
     public function destroy(Request $request, Donation $donation): JsonResponse
@@ -144,6 +188,11 @@ class DonationController extends Controller
         }
 
         return Donation::query()->whereRaw('1 = 0');
+    }
+
+    private function manageableMosques(User $user): Builder
+    {
+        return Mosque::query()->administrableBy($user)->orderBy('name');
     }
 
     private function ensureMosqueManageable(User $user, int $mosqueId): void

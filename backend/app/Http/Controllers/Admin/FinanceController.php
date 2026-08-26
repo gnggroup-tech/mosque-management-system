@@ -12,15 +12,17 @@ use App\Models\Subsidy;
 use App\Models\User;
 use App\Models\WaqfRevenue;
 use App\Models\ZakatCollection;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class FinanceController extends Controller
 {
-    public function report(Request $request): JsonResponse
+    public function report(Request $request): JsonResponse|View
     {
         $request->validate([
             'mosque_id' => ['nullable', 'integer', 'exists:mosques,id'],
@@ -58,26 +60,46 @@ class FinanceController extends Controller
             ->when($to, fn (Builder $q) => $q->whereDate('received_at', '<=', $to))->sum('amount');
         $expenses = $sum(Expense::class, 'spent_at');
 
-        return response()->json([
+        $summary = [
             'currency' => $currency,
             'resources' => $resources,
             'total_resources' => array_sum($resources),
             'total_expenses' => $expenses,
             'balance' => array_sum($resources) - $expenses,
+        ];
+
+        if ($request->expectsJson()) {
+            return response()->json($summary);
+        }
+
+        $mosques = $this->visibleMosques($request->user())->orderBy('name')->get(['id', 'name']);
+
+        return view('admin.finances.index', [
+            'summary' => $summary,
+            'mosques' => $mosques,
+            'filters' => $request->only(['mosque_id', 'currency', 'from', 'to']),
+            'subsidies' => Subsidy::query()->with('mosque:id,name')->whereIn('mosque_id', $mosqueIds)
+                ->where('currency', $currency)->latest('received_at')->limit(20)->get(),
+            'expenses' => Expense::query()->with('mosque:id,name')->whereIn('mosque_id', $mosqueIds)
+                ->where('currency', $currency)->latest('spent_at')->limit(20)->get(),
         ]);
     }
 
-    public function storeSubsidy(StoreSubsidyRequest $request): JsonResponse
+    public function storeSubsidy(StoreSubsidyRequest $request): JsonResponse|RedirectResponse
     {
         $data = $request->validated();
         $this->ensureManageable($request->user(), (int) $data['mosque_id']);
         $data += ['currency' => 'GNF'];
         $data += ['reference_number' => $this->number('SUB'), 'status' => 'pending', 'created_by' => $request->user()->id];
 
-        return response()->json(Subsidy::query()->create($data), 201);
+        $subsidy = Subsidy::query()->create($data);
+
+        return $request->expectsJson()
+            ? response()->json($subsidy, 201)
+            : redirect()->route('admin.finances.report', ['currency' => $subsidy->currency])->with('success', __('Subsidy recorded.'));
     }
 
-    public function validateSubsidy(Request $request, Subsidy $subsidy): JsonResponse
+    public function validateSubsidy(Request $request, Subsidy $subsidy): JsonResponse|RedirectResponse
     {
         $this->ensureManageable($request->user(), $subsidy->mosque_id);
         DB::transaction(function () use ($request, $subsidy): void {
@@ -86,20 +108,26 @@ class FinanceController extends Controller
             $locked->update(['status' => 'validated', 'validated_by' => $request->user()->id, 'validated_at' => now()]);
         });
 
-        return response()->json($subsidy->fresh());
+        return $request->expectsJson()
+            ? response()->json($subsidy->fresh())
+            : redirect()->route('admin.finances.report', ['currency' => $subsidy->currency])->with('success', __('Subsidy validated.'));
     }
 
-    public function storeExpense(StoreExpenseRequest $request): JsonResponse
+    public function storeExpense(StoreExpenseRequest $request): JsonResponse|RedirectResponse
     {
         $data = $request->validated();
         $this->ensureManageable($request->user(), (int) $data['mosque_id']);
         $data += ['currency' => 'GNF'];
         $data += ['reference_number' => $this->number('EXP'), 'status' => 'pending', 'created_by' => $request->user()->id];
 
-        return response()->json(Expense::query()->create($data), 201);
+        $expense = Expense::query()->create($data);
+
+        return $request->expectsJson()
+            ? response()->json($expense, 201)
+            : redirect()->route('admin.finances.report', ['currency' => $expense->currency])->with('success', __('Expense recorded.'));
     }
 
-    public function validateExpense(Request $request, Expense $expense): JsonResponse
+    public function validateExpense(Request $request, Expense $expense): JsonResponse|RedirectResponse
     {
         $this->ensureManageable($request->user(), $expense->mosque_id);
         DB::transaction(function () use ($request, $expense): void {
@@ -110,7 +138,9 @@ class FinanceController extends Controller
             $locked->update(['status' => 'validated', 'validated_by' => $request->user()->id, 'validated_at' => now()]);
         });
 
-        return response()->json($expense->fresh());
+        return $request->expectsJson()
+            ? response()->json($expense->fresh())
+            : redirect()->route('admin.finances.report', ['currency' => $expense->currency])->with('success', __('Expense validated.'));
     }
 
     private function availableFunds(int $mosqueId, string $currency): float

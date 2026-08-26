@@ -1,0 +1,19 @@
+<x-app-layout>
+    <x-slot name="header"><div class="flex items-center justify-between gap-3"><div><h1 class="text-lg font-bold">{{ __('Donations and contributions') }}</h1><p class="text-xs text-slate-500">{{ __('Validated amounts remain separated by currency.') }}</p></div>@can('contributions.manage')<a href="{{ route('admin.donations.create') }}" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">{{ __('Record contribution') }}</a>@endcan</div></x-slot>
+    <div class="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
+        <form method="GET" class="grid gap-3 rounded-2xl border bg-white p-5 shadow-sm sm:grid-cols-2 lg:grid-cols-6">
+            <input name="search" value="{{ $filters['search'] ?? '' }}" placeholder="{{ __('Receipt or reference') }}" class="rounded-xl border-slate-300 lg:col-span-2">
+            <select name="mosque_id" class="rounded-xl border-slate-300"><option value="">{{ __('All authorized mosques') }}</option>@foreach($mosques as $mosque)<option value="{{ $mosque->id }}" @selected(($filters['mosque_id'] ?? '') == $mosque->id)>{{ $mosque->name }}</option>@endforeach</select>
+            <select name="contribution_type" class="rounded-xl border-slate-300"><option value="">{{ __('All types') }}</option>@foreach(['donation','offering','subscription','subsidy','other'] as $type)<option value="{{ $type }}" @selected(($filters['contribution_type'] ?? '') === $type)>{{ __($type) }}</option>@endforeach</select>
+            <select name="status" class="rounded-xl border-slate-300"><option value="">{{ __('All statuses') }}</option>@foreach(['pending','validated','rejected'] as $status)<option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ __($status) }}</option>@endforeach</select>
+            <button class="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white">{{ __('Apply filters') }}</button>
+        </form>
+        <section class="overflow-hidden rounded-2xl border bg-white shadow-sm">
+            @if($donations->isEmpty())<p class="p-12 text-center text-slate-500">{{ __('No contributions found.') }}</p>@else
+                <div class="hidden overflow-x-auto md:block"><table class="min-w-full divide-y"><thead class="bg-slate-50"><tr>@foreach([__('Receipt'),__('Mosque'),__('Donor'),__('Type'),__('Amount'),__('Status')] as $heading)<th class="px-5 py-3 text-start text-xs font-semibold uppercase text-slate-500">{{ $heading }}</th>@endforeach</tr></thead><tbody class="divide-y">@foreach($donations as $donation)<tr><td class="px-5 py-4"><a class="font-semibold text-emerald-700" href="{{ route('admin.donations.show',$donation) }}">{{ $donation->receipt_number }}</a></td><td class="px-5 py-4">{{ $donation->mosque->name }}</td><td class="px-5 py-4">{{ $donation->is_anonymous ? __('Anonymous') : ($donation->faithful ? $donation->faithful->first_name.' '.$donation->faithful->last_name : ($donation->donor_name ?: __('Not specified'))) }}</td><td class="px-5 py-4">{{ __($donation->contribution_type) }}</td><td class="px-5 py-4"><x-money :amount="$donation->amount" :currency="$donation->currency" /></td><td class="px-5 py-4"><x-status-badge :status="$donation->status" /></td></tr>@endforeach</tbody></table></div>
+                <div class="divide-y md:hidden">@foreach($donations as $donation)<article class="space-y-3 p-5"><div class="flex justify-between gap-3"><a class="font-bold text-emerald-700" href="{{ route('admin.donations.show',$donation) }}">{{ $donation->receipt_number }}</a><x-status-badge :status="$donation->status" /></div><p class="text-sm">{{ $donation->mosque->name }} · {{ __($donation->contribution_type) }}</p><x-money :amount="$donation->amount" :currency="$donation->currency" /></article>@endforeach</div>
+                @if($donations->hasPages())<div class="border-t p-4">{{ $donations->links() }}</div>@endif
+            @endif
+        </section>
+    </div>
+</x-app-layout>

@@ -35,5 +35,16 @@
                 </section>
             @endcan
         </div>
+
+        <section aria-labelledby="financial-actions-heading">
+            <h2 id="financial-actions-heading" class="mb-4 font-bold">{{ __('Financial actions') }}</h2>
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                @can('contributions.view')<a href="{{ route('admin.donations.index') }}" class="rounded-xl border bg-white p-4 font-semibold text-emerald-700 shadow-sm">{{ __('Donations') }}</a>@endcan
+                @can('finances.view')<a href="{{ route('admin.finances.report') }}" class="rounded-xl border bg-white p-4 font-semibold text-emerald-700 shadow-sm">{{ __('Finances') }}</a>@endcan
+                @can('zakat.view')<a href="{{ route('admin.zakat.collections.index') }}" class="rounded-xl border bg-white p-4 font-semibold text-emerald-700 shadow-sm">{{ __('Zakat') }}</a>@endcan
+                @can('waqf.view')<a href="{{ route('admin.waqf.assets.index') }}" class="rounded-xl border bg-white p-4 font-semibold text-emerald-700 shadow-sm">{{ __('Waqf') }}</a>@endcan
+                @can('reports.view')<a href="{{ route('admin.reports.index') }}" class="rounded-xl border bg-white p-4 font-semibold text-emerald-700 shadow-sm">{{ __('Reports') }}</a>@endcan
+            </div>
+        </section>
     </div>
 </x-app-layout>

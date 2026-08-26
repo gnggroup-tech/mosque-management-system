@@ -1,0 +1,52 @@
+<x-app-layout>
+    <x-slot name="header"><div><h1 class="text-lg font-bold">{{ __('Zakat management') }}</h1><p class="text-xs text-slate-500">{{ __('Collections and distributions are balanced independently for each category and currency.') }}</p></div></x-slot>
+    <div class="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6">
+        <form method="GET" class="grid gap-3 rounded-2xl border bg-white p-5 shadow-sm sm:grid-cols-4">
+            <select name="mosque_id" class="rounded-xl border-slate-300"><option value="">{{ __('All authorized mosques') }}</option>@foreach($mosques as $mosque)<option value="{{ $mosque->id }}" @selected(($filters['mosque_id']??'')==$mosque->id)>{{ $mosque->name }}</option>@endforeach</select>
+            <select name="category" class="rounded-xl border-slate-300"><option value="">{{ __('All categories') }}</option>@foreach(['fitr','maal','agriculture','livestock','trade','gold_silver','other'] as $category)<option value="{{ $category }}" @selected(($filters['category']??'')===$category)>{{ __($category) }}</option>@endforeach</select>
+            <select name="status" class="rounded-xl border-slate-300"><option value="">{{ __('All statuses') }}</option>@foreach(['pending','validated'] as $status)<option value="{{ $status }}" @selected(($filters['status']??'')===$status)>{{ __($status) }}</option>@endforeach</select>
+            <button class="rounded-xl bg-slate-950 px-4 py-2 font-semibold text-white">{{ __('Apply filters') }}</button>
+        </form>
+
+        @can('zakat.manage')
+            <section x-data="{ form: 'collection' }" class="rounded-2xl border bg-white p-6 shadow-sm">
+                <div class="mb-5 flex flex-wrap gap-2">@foreach(['collection'=>__('Collection'),'beneficiary'=>__('Beneficiary'),'distribution'=>__('Distribution')] as $key=>$label)<button type="button" @click="form='{{ $key }}'" :class="form==='{{ $key }}'?'bg-slate-950 text-white':'bg-slate-100'" class="rounded-xl px-4 py-2 text-sm font-semibold">{{ $label }}</button>@endforeach</div>
+                <form x-show="form==='collection'" method="POST" action="{{ route('admin.zakat.collections.store') }}" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">@csrf
+                    <select required name="mosque_id" class="rounded-xl border-slate-300"><option value="">{{ __('Choose mosque') }}</option>@foreach($mosques as $mosque)<option value="{{ $mosque->id }}">{{ $mosque->name }}</option>@endforeach</select>
+                    <select required name="category" class="rounded-xl border-slate-300">@foreach(['fitr','maal','agriculture','livestock','trade','gold_silver','other'] as $category)<option value="{{ $category }}">{{ __($category) }}</option>@endforeach</select>
+                    <input required name="amount" inputmode="decimal" placeholder="{{ __('Amount') }}" class="rounded-xl border-slate-300">
+                    <select name="currency" class="rounded-xl border-slate-300">@foreach(['GNF','USD','EUR'] as $currency)<option value="{{ $currency }}">{{ $currency }}</option>@endforeach</select>
+                    <select required name="payment_method" class="rounded-xl border-slate-300">@foreach(['cash','bank_transfer','mobile_money','cheque','card','other'] as $method)<option value="{{ $method }}">{{ __($method) }}</option>@endforeach</select>
+                    <input required type="date" name="collected_at" value="{{ today()->toDateString() }}" class="rounded-xl border-slate-300">
+                    <input name="payer_name" placeholder="{{ __('Payer name') }}" class="rounded-xl border-slate-300">
+                    <label class="flex items-center gap-2"><input type="checkbox" name="is_anonymous" value="1" class="rounded border-slate-300">{{ __('Anonymous') }}</label>
+                    <button class="rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white lg:col-span-4">{{ __('Save') }}</button>
+                </form>
+                <form x-show="form==='beneficiary'" method="POST" action="{{ route('admin.zakat.beneficiaries.store') }}" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">@csrf
+                    <select required name="mosque_id" class="rounded-xl border-slate-300"><option value="">{{ __('Choose mosque') }}</option>@foreach($mosques as $mosque)<option value="{{ $mosque->id }}">{{ $mosque->name }}</option>@endforeach</select>
+                    <input required name="name" placeholder="{{ __('Beneficiary name') }}" class="rounded-xl border-slate-300">
+                    <select required name="category" class="rounded-xl border-slate-300">@foreach(['poor','needy','administrators','reconciliation','freeing_captives','debtors','cause_of_allah','travelers'] as $category)<option value="{{ $category }}">{{ __($category) }}</option>@endforeach</select>
+                    <input required name="eligibility_reason" placeholder="{{ __('Eligibility reason') }}" class="rounded-xl border-slate-300">
+                    <button class="rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white lg:col-span-4">{{ __('Save') }}</button>
+                </form>
+                <form x-show="form==='distribution'" method="POST" action="{{ route('admin.zakat.distributions.store') }}" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">@csrf
+                    <select required name="mosque_id" class="rounded-xl border-slate-300"><option value="">{{ __('Choose mosque') }}</option>@foreach($mosques as $mosque)<option value="{{ $mosque->id }}">{{ $mosque->name }}</option>@endforeach</select>
+                    <select required name="zakat_beneficiary_id" class="rounded-xl border-slate-300"><option value="">{{ __('Choose beneficiary') }}</option>@foreach($beneficiaries->where('status','active') as $beneficiary)<option value="{{ $beneficiary->id }}">{{ $beneficiary->beneficiary_number }} — {{ $beneficiary->name }}</option>@endforeach</select>
+                    <select required name="category" class="rounded-xl border-slate-300">@foreach(['fitr','maal','agriculture','livestock','trade','gold_silver','other'] as $category)<option value="{{ $category }}">{{ __($category) }}</option>@endforeach</select>
+                    <div class="flex gap-2"><input required name="amount" inputmode="decimal" placeholder="{{ __('Amount') }}" class="min-w-0 flex-1 rounded-xl border-slate-300"><select name="currency" class="rounded-xl border-slate-300">@foreach(['GNF','USD','EUR'] as $currency)<option value="{{ $currency }}">{{ $currency }}</option>@endforeach</select></div>
+                    <select required name="payment_method" class="rounded-xl border-slate-300">@foreach(['cash','bank_transfer','mobile_money','cheque','card','other'] as $method)<option value="{{ $method }}">{{ __($method) }}</option>@endforeach</select>
+                    <input required type="date" name="distributed_at" value="{{ today()->toDateString() }}" class="rounded-xl border-slate-300">
+                    <input required name="purpose" placeholder="{{ __('Purpose') }}" class="rounded-xl border-slate-300">
+                    <input name="supporting_document" placeholder="{{ __('Supporting document (legacy reference)') }}" class="rounded-xl border-slate-300">
+                    <button class="rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white lg:col-span-4">{{ __('Save') }}</button>
+                </form>
+            </section>
+        @endcan
+
+        <section class="overflow-hidden rounded-2xl border bg-white shadow-sm"><div class="border-b p-5"><h2 class="font-bold">{{ __('Collections') }}</h2></div><div class="divide-y">@forelse($collections as $collection)<article class="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div><strong>{{ $collection->receipt_number }}</strong><p class="text-sm text-slate-500">{{ $collection->mosque->name }} · {{ __($collection->category) }} · {{ $collection->is_anonymous ? __('Anonymous') : ($collection->payer_name ?: __('Identified payer')) }}</p></div><div class="flex items-center gap-4"><x-money :amount="$collection->amount" :currency="$collection->currency" /><x-status-badge :status="$collection->status" />@if(Auth::user()->can('zakat.manage') && $collection->status === 'pending')<form method="POST" action="{{ route('admin.zakat.collections.validate',$collection) }}" onsubmit="return confirm('{{ __('Validate this collection?') }}')">@csrf<button class="font-semibold text-emerald-700">{{ __('Validate') }}</button></form>@endif</div></article>@empty<p class="p-10 text-center text-slate-500">{{ __('No Zakat collections found.') }}</p>@endforelse</div>@if($collections->hasPages())<div class="border-t p-4">{{ $collections->links() }}</div>@endif</section>
+        <div class="grid gap-6 xl:grid-cols-2">
+            <section class="rounded-2xl border bg-white shadow-sm"><div class="border-b p-5"><h2 class="font-bold">{{ __('Beneficiaries') }}</h2></div><div class="divide-y">@forelse($beneficiaries as $beneficiary)<article class="flex justify-between gap-3 p-5"><div><strong>{{ $beneficiary->beneficiary_number }}</strong><p class="text-sm text-slate-500">{{ $beneficiary->name }} · {{ $beneficiary->mosque->name }}</p></div><x-status-badge :status="$beneficiary->status" /></article>@empty<p class="p-8 text-center text-slate-500">{{ __('No beneficiaries.') }}</p>@endforelse</div></section>
+            <section class="rounded-2xl border bg-white shadow-sm"><div class="border-b p-5"><h2 class="font-bold">{{ __('Distributions') }}</h2></div><div class="divide-y">@forelse($distributions as $distribution)<article class="space-y-2 p-5"><div class="flex justify-between gap-3"><div><strong>{{ $distribution->reference_number }}</strong><p class="text-sm text-slate-500">{{ $distribution->beneficiary->beneficiary_number }} · {{ __($distribution->category) }}</p></div><x-status-badge :status="$distribution->status" /></div><div class="flex justify-between"><x-money :amount="$distribution->amount" :currency="$distribution->currency" /><x-legacy-reference :value="$distribution->supporting_document" /></div>@if(Auth::user()->can('zakat.manage') && $distribution->status === 'pending')<form method="POST" action="{{ route('admin.zakat.distributions.validate',$distribution) }}" onsubmit="return confirm('{{ __('Validate this distribution?') }}')">@csrf<button class="font-semibold text-emerald-700">{{ __('Validate') }}</button></form>@endif</article>@empty<p class="p-8 text-center text-slate-500">{{ __('No distributions.') }}</p>@endforelse</div></section>
+        </div>
+    </div>
+</x-app-layout>

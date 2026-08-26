@@ -11,8 +11,10 @@ use App\Models\User;
 use App\Models\ZakatBeneficiary;
 use App\Models\ZakatCollection;
 use App\Models\ZakatDistribution;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -20,7 +22,7 @@ use Illuminate\Validation\Rule;
 
 class ZakatController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse|View
     {
         $collections = $this->collectionsVisibleTo($request->user())
             ->with('mosque:id,code,name')
@@ -29,10 +31,27 @@ class ZakatController extends Controller
             ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
             ->latest('collected_at')->paginate(min(max($request->integer('per_page', 20), 1), 100));
 
-        return response()->json($collections);
+        if ($request->expectsJson()) {
+            return response()->json($collections);
+        }
+
+        $mosques = Mosque::query()->administrableBy($request->user())->orderBy('name')->get(['id', 'name']);
+        $mosqueIds = $mosques->pluck('id');
+
+        return view('admin.zakat.index', [
+            'collections' => $collections->withQueryString(),
+            'mosques' => $mosques,
+            'faithful' => Faithful::query()->whereIn('mosque_id', $mosqueIds)->where('status', 'active')
+                ->orderBy('first_name')->get(['id', 'mosque_id', 'registration_number', 'first_name', 'last_name']),
+            'beneficiaries' => ZakatBeneficiary::query()->with('mosque:id,name')->whereIn('mosque_id', $mosqueIds)
+                ->latest()->limit(30)->get(),
+            'distributions' => ZakatDistribution::query()->with(['mosque:id,name', 'beneficiary:id,beneficiary_number,name'])
+                ->whereIn('mosque_id', $mosqueIds)->latest('distributed_at')->limit(30)->get(),
+            'filters' => $request->only(['mosque_id', 'category', 'status']),
+        ]);
     }
 
-    public function storeCollection(StoreZakatCollectionRequest $request): JsonResponse
+    public function storeCollection(StoreZakatCollectionRequest $request): JsonResponse|RedirectResponse
     {
         $data = $request->validated();
         $this->ensureMosqueManageable($request->user(), (int) $data['mosque_id']);
@@ -50,10 +69,14 @@ class ZakatController extends Controller
         $data['status'] = 'pending';
         $data['created_by'] = $request->user()->getKey();
 
-        return response()->json(ZakatCollection::query()->create($data), 201);
+        $collection = ZakatCollection::query()->create($data);
+
+        return $request->expectsJson()
+            ? response()->json($collection, 201)
+            : redirect()->route('admin.zakat.collections.index')->with('success', __('Zakat collection recorded.'));
     }
 
-    public function validateCollection(Request $request, ZakatCollection $collection): JsonResponse
+    public function validateCollection(Request $request, ZakatCollection $collection): JsonResponse|RedirectResponse
     {
         $this->ensureMosqueManageable($request->user(), $collection->mosque_id);
         DB::transaction(function () use ($request, $collection): void {
@@ -62,10 +85,12 @@ class ZakatController extends Controller
             $locked->update(['status' => 'validated', 'validated_by' => $request->user()->id, 'validated_at' => now()]);
         });
 
-        return response()->json($collection->fresh());
+        return $request->expectsJson()
+            ? response()->json($collection->fresh())
+            : redirect()->route('admin.zakat.collections.index')->with('success', __('Zakat collection validated.'));
     }
 
-    public function storeBeneficiary(Request $request): JsonResponse
+    public function storeBeneficiary(Request $request): JsonResponse|RedirectResponse
     {
         abort_unless($request->user()->can('zakat.manage'), 403);
         $data = $request->validate([
@@ -83,10 +108,14 @@ class ZakatController extends Controller
         $data['verified_at'] = now()->toDateString();
         $data['verified_by'] = $request->user()->id;
 
-        return response()->json(ZakatBeneficiary::query()->create($data), 201);
+        $beneficiary = ZakatBeneficiary::query()->create($data);
+
+        return $request->expectsJson()
+            ? response()->json($beneficiary, 201)
+            : redirect()->route('admin.zakat.collections.index')->with('success', __('Zakat beneficiary recorded.'));
     }
 
-    public function storeDistribution(StoreZakatDistributionRequest $request): JsonResponse
+    public function storeDistribution(StoreZakatDistributionRequest $request): JsonResponse|RedirectResponse
     {
         $data = $request->validated();
         $this->ensureMosqueManageable($request->user(), (int) $data['mosque_id']);
@@ -97,10 +126,14 @@ class ZakatController extends Controller
         $data['status'] = 'pending';
         $data['created_by'] = $request->user()->id;
 
-        return response()->json(ZakatDistribution::query()->create($data), 201);
+        $distribution = ZakatDistribution::query()->create($data);
+
+        return $request->expectsJson()
+            ? response()->json($distribution, 201)
+            : redirect()->route('admin.zakat.collections.index')->with('success', __('Zakat distribution recorded.'));
     }
 
-    public function validateDistribution(Request $request, ZakatDistribution $distribution): JsonResponse
+    public function validateDistribution(Request $request, ZakatDistribution $distribution): JsonResponse|RedirectResponse
     {
         $this->ensureMosqueManageable($request->user(), $distribution->mosque_id);
         DB::transaction(function () use ($request, $distribution): void {
@@ -112,7 +145,9 @@ class ZakatController extends Controller
             $locked->update(['status' => 'validated', 'validated_by' => $request->user()->id, 'validated_at' => now()]);
         });
 
-        return response()->json($distribution->fresh());
+        return $request->expectsJson()
+            ? response()->json($distribution->fresh())
+            : redirect()->route('admin.zakat.collections.index')->with('success', __('Zakat distribution validated.'));
     }
 
     private function collectionsVisibleTo(User $user): Builder
