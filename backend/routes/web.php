@@ -109,6 +109,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::patch('/faithful/{faithful}', [FaithfulController::class, 'update'])->middleware('permission:faithful.manage')->name('faithful.update');
         Route::delete('/faithful/{faithful}', [FaithfulController::class, 'destroy'])->middleware('permission:faithful.manage')->name('faithful.destroy');
         Route::get('/donations', [DonationController::class, 'index'])->middleware('permission:contributions.view')->name('donations.index');
+        Route::get('/donations/create', [DonationController::class, 'create'])->middleware('permission:contributions.manage')->name('donations.create');
         Route::post('/donations', [DonationController::class, 'store'])->middleware('permission:contributions.manage')->name('donations.store');
         Route::get('/donations/{donation}', [DonationController::class, 'show'])->middleware('permission:contributions.view')->name('donations.show');
         Route::patch('/donations/{donation}', [DonationController::class, 'update'])->middleware('permission:contributions.manage')->name('donations.update');

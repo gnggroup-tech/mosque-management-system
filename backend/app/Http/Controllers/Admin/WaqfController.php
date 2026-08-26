@@ -11,15 +11,17 @@ use App\Models\User;
 use App\Models\WaqfAsset;
 use App\Models\WaqfExpense;
 use App\Models\WaqfRevenue;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class WaqfController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse|View
     {
         $assets = $this->assetsVisibleTo($request->user())
             ->with('mosque:id,code,name')
@@ -30,10 +32,27 @@ class WaqfController extends Controller
             ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
             ->latest()->paginate(min(max($request->integer('per_page', 20), 1), 100));
 
-        return response()->json($assets);
+        if ($request->expectsJson()) {
+            return response()->json($assets);
+        }
+
+        $assets->getCollection()->load([
+            'revenues' => fn ($query) => $query->latest('received_at'),
+            'expenses' => fn ($query) => $query->latest('spent_at'),
+        ]);
+        $assets->getCollection()->each(fn (WaqfAsset $asset) => $asset->setAttribute(
+            'validated_balance',
+            $this->subtractDecimalAmounts((string) ($asset->validated_revenue ?? '0'), (string) ($asset->validated_expense ?? '0')),
+        ));
+
+        return view('admin.waqf.index', [
+            'assets' => $assets->withQueryString(),
+            'mosques' => Mosque::query()->administrableBy($request->user())->orderBy('name')->get(['id', 'name']),
+            'filters' => $request->only(['mosque_id', 'type', 'status']),
+        ]);
     }
 
-    public function storeAsset(StoreWaqfAssetRequest $request): JsonResponse
+    public function storeAsset(StoreWaqfAssetRequest $request): JsonResponse|RedirectResponse
     {
         $data = $request->validated();
         $this->ensureMosqueManageable($request->user(), (int) $data['mosque_id']);
@@ -42,10 +61,14 @@ class WaqfController extends Controller
         $data['status'] = 'active';
         $data['created_by'] = $request->user()->id;
 
-        return response()->json(WaqfAsset::query()->create($data), 201);
+        $asset = WaqfAsset::query()->create($data);
+
+        return $request->expectsJson()
+            ? response()->json($asset, 201)
+            : redirect()->route('admin.waqf.assets.index')->with('success', __('Waqf asset recorded.'));
     }
 
-    public function storeRevenue(StoreWaqfTransactionRequest $request): JsonResponse
+    public function storeRevenue(StoreWaqfTransactionRequest $request): JsonResponse|RedirectResponse
     {
         $data = $request->validated();
         $asset = $this->manageableAsset($request->user(), (int) $data['waqf_asset_id']);
@@ -56,10 +79,14 @@ class WaqfController extends Controller
         $data['status'] = 'pending';
         $data['created_by'] = $request->user()->id;
 
-        return response()->json(WaqfRevenue::query()->create($data), 201);
+        $revenue = WaqfRevenue::query()->create($data);
+
+        return $request->expectsJson()
+            ? response()->json($revenue, 201)
+            : redirect()->route('admin.waqf.assets.index')->with('success', __('Waqf revenue recorded.'));
     }
 
-    public function storeExpense(StoreWaqfTransactionRequest $request): JsonResponse
+    public function storeExpense(StoreWaqfTransactionRequest $request): JsonResponse|RedirectResponse
     {
         $data = $request->validated();
         $asset = $this->manageableAsset($request->user(), (int) $data['waqf_asset_id']);
@@ -70,7 +97,11 @@ class WaqfController extends Controller
         $data['status'] = 'pending';
         $data['created_by'] = $request->user()->id;
 
-        return response()->json(WaqfExpense::query()->create($data), 201);
+        $expense = WaqfExpense::query()->create($data);
+
+        return $request->expectsJson()
+            ? response()->json($expense, 201)
+            : redirect()->route('admin.waqf.assets.index')->with('success', __('Waqf expense recorded.'));
     }
 
     public function updateExpense(UpdateWaqfExpenseRequest $request, WaqfExpense $expense): JsonResponse
@@ -90,7 +121,7 @@ class WaqfController extends Controller
         return response()->json($expense);
     }
 
-    public function validateRevenue(Request $request, WaqfRevenue $revenue): JsonResponse
+    public function validateRevenue(Request $request, WaqfRevenue $revenue): JsonResponse|RedirectResponse
     {
         $this->manageableAsset($request->user(), $revenue->waqf_asset_id);
         DB::transaction(function () use ($request, $revenue): void {
@@ -99,10 +130,12 @@ class WaqfController extends Controller
             $locked->update(['status' => 'validated', 'validated_by' => $request->user()->id, 'validated_at' => now()]);
         });
 
-        return response()->json($revenue->fresh());
+        return $request->expectsJson()
+            ? response()->json($revenue->fresh())
+            : redirect()->route('admin.waqf.assets.index')->with('success', __('Waqf revenue validated.'));
     }
 
-    public function validateExpense(Request $request, WaqfExpense $expense): JsonResponse
+    public function validateExpense(Request $request, WaqfExpense $expense): JsonResponse|RedirectResponse
     {
         $this->manageableAsset($request->user(), $expense->waqf_asset_id);
         DB::transaction(function () use ($request, $expense): void {
@@ -114,7 +147,9 @@ class WaqfController extends Controller
             $locked->update(['status' => 'validated', 'validated_by' => $request->user()->id, 'validated_at' => now()]);
         });
 
-        return response()->json($expense->fresh());
+        return $request->expectsJson()
+            ? response()->json($expense->fresh())
+            : redirect()->route('admin.waqf.assets.index')->with('success', __('Waqf expense validated.'));
     }
 
     private function assetsVisibleTo(User $user): Builder
@@ -147,6 +182,33 @@ class WaqfController extends Controller
     private function ensureTransactionCurrencyMatchesAsset(WaqfAsset $asset, string $currency): void
     {
         abort_if($currency !== $asset->currency, 422, __('The transaction currency must match the Waqf asset currency.'));
+    }
+
+    private function subtractDecimalAmounts(string $left, string $right): string
+    {
+        $minor = static function (string $value): string {
+            [$whole, $fraction] = array_pad(explode('.', ltrim($value, '+'), 2), 2, '');
+
+            return ltrim(($whole === '' ? '0' : $whole).str_pad(substr($fraction, 0, 2), 2, '0'), '0') ?: '0';
+        };
+        $leftMinor = $minor($left);
+        $rightMinor = $minor($right);
+        $negative = strlen($leftMinor) < strlen($rightMinor)
+            || (strlen($leftMinor) === strlen($rightMinor) && strcmp($leftMinor, $rightMinor) < 0);
+        [$larger, $smaller] = $negative ? [$rightMinor, $leftMinor] : [$leftMinor, $rightMinor];
+        $smaller = str_pad($smaller, strlen($larger), '0', STR_PAD_LEFT);
+        $borrow = 0;
+        $result = '';
+
+        for ($index = strlen($larger) - 1; $index >= 0; $index--) {
+            $digit = (int) $larger[$index] - (int) $smaller[$index] - $borrow;
+            $borrow = $digit < 0 ? 1 : 0;
+            $result = (string) ($digit < 0 ? $digit + 10 : $digit).$result;
+        }
+
+        $result = str_pad(ltrim($result, '0') ?: '0', 3, '0', STR_PAD_LEFT);
+
+        return ($negative ? '-' : '').substr($result, 0, -2).'.'.substr($result, -2);
     }
 
     private function uniqueNumber(string $prefix, string $model, string $column): string

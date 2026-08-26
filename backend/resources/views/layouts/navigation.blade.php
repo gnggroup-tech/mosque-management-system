@@ -9,8 +9,12 @@
         ['label' => __('Councils'), 'route' => 'admin.councils.index', 'active' => ['admin.councils.*', 'admin.council-members.*', 'admin.council-meetings.*'], 'permission' => 'councils.view', 'icon' => 'council'],
         ['label' => __('Activities'), 'route' => 'admin.activities.index', 'active' => 'admin.activities.*', 'permission' => 'activities.view', 'icon' => 'calendar'],
         ['label' => __('Announcements'), 'route' => 'admin.announcements.index', 'active' => 'admin.announcements.*', 'permission' => 'announcements.view', 'icon' => 'announcement', 'badge' => $unreadAnnouncements],
+        ['label' => __('Donations'), 'route' => 'admin.donations.index', 'active' => 'admin.donations.*', 'permission' => 'contributions.view', 'icon' => 'finance'],
+        ['label' => __('Finances'), 'route' => 'admin.finances.report', 'active' => 'admin.finances.*', 'permission' => 'finances.view', 'icon' => 'finance'],
+        ['label' => __('Zakat'), 'route' => 'admin.zakat.collections.index', 'active' => 'admin.zakat.*', 'permission' => 'zakat.view', 'icon' => 'finance'],
+        ['label' => __('Waqf'), 'route' => 'admin.waqf.assets.index', 'active' => 'admin.waqf.*', 'permission' => 'waqf.view', 'icon' => 'finance'],
         ['label' => __('Accounts'), 'route' => 'admin.accounts.index', 'active' => 'admin.accounts.*', 'permission' => 'users.directory.view', 'icon' => 'users'],
-        ['label' => __('Data exports'), 'route' => 'admin.reports.index', 'active' => 'admin.reports.*', 'permission' => 'reports.view', 'icon' => 'report'],
+        ['label' => __('Reports'), 'route' => 'admin.reports.index', 'active' => 'admin.reports.*', 'permission' => 'reports.view', 'icon' => 'report'],
     ];
 @endphp
 <div x-cloak x-show="sidebarOpen" class="fixed inset-0 z-40 bg-slate-950/50 lg:hidden" @click="sidebarOpen = false" aria-hidden="true"></div>

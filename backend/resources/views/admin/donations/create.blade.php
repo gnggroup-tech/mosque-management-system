@@ -1,0 +1,1 @@
+<x-app-layout><x-slot name="header"><h1 class="text-lg font-bold">{{ __('Record contribution') }}</h1></x-slot><div class="mx-auto max-w-4xl px-4 py-8"><div class="rounded-2xl border bg-white p-6 shadow-sm">@include('admin.donations.partials.form')</div></div></x-app-layout>
